@@ -20,7 +20,15 @@ module LanguageFileSystem
 
   @dialogues = {}
   
+  # Regexps for the special commands used in Messages
   DIALOGUE_CODE = /\\dialogue\[([^\]]+)\]/
+  
+  # Filenames
+  DIALOGUE_FILE_PREFIX = "Dialogues"
+  RVTEXT_EXT = "rvtext"
+  
+  # File entry format Regexp
+  ENTRY_METADATA = /^<<([^>]+)>>$/
   
   def self.dialogues
     {}.replace @dialogues
@@ -34,6 +42,26 @@ module LanguageFileSystem
     @dialogues[id] = text
   end
   
+  def self.load_rvtext(filename)
+    @dialogues = {}
+    open(filename, "r:UTF-8") { |f|
+      current_id = nil
+      current_text = ""
+      f.each_line { |l|
+        next if l.start_with?("#") # Ignore comment lines
+        if m = ENTRY_METADATA.match(l)
+          add_dialogue(current_id, current_text.rstrip)  if current_id
+          current_id = m[1]
+          current_text = ""
+        else
+          current_text += l
+        end
+      }
+      if current_text != ""
+        add_dialogue(current_id, current_text.rstrip)
+      end
+    }
+  end
 end
 
 #==============================================================================
