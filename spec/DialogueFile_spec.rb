@@ -2,13 +2,13 @@ describe LanguageFileSystem do
 
   before(:all) do
     open("SimpleFile.rvtext", "w:UTF-8") { |f|
-      f.write("<<a simple id>>\n")
-      f.write("Blablabla\n")
-      f.write("<<EmptyMessage>>\n")
-      f.write("<<MultilineMessage>>\n")
-      f.write("I see...\n")
-      f.write("# This is a comment line\n")
-      f.write("So this is how you think about it.")
+      f.write(["<<a simple id>>",
+               "Blablabla",
+               "<<EmptyMessage>>",
+               "<<MultilineMessage>>",
+               "I see...",
+               "# This is a comment line",
+               "So this is how you think about it."].join("\n") + "\n")
     }
   end
 

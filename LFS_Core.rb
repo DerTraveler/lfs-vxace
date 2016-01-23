@@ -1,5 +1,5 @@
 #==============================================================================
-# 
+#
 # Language File System - Core Script
 # Version 1.3.1 - TDD rewrite
 # Last Update: March 8th, 2014
@@ -11,7 +11,7 @@ $imported = {} if $imported.nil?
 $imported[:LanguageFileSystem_Core] = true
 
 module LanguageFileSystem
-  
+
 ###############################################################################
 #
 # Do not edit past this point, if you have no idea, what you're doing ;)
@@ -19,29 +19,29 @@ module LanguageFileSystem
 ###############################################################################
 
   @dialogues = {}
-  
+
   # Regexps for the special commands used in Messages
   DIALOGUE_CODE = /\\dialogue\[([^\]]+)\]/
-  
+
   # Filenames
   DIALOGUE_FILE_PREFIX = "Dialogues"
   RVTEXT_EXT = "rvtext"
-  
+
   # File entry format Regexp
   ENTRY_METADATA = /^<<([^>]+)>>$/
-  
+
   def self.dialogues
     {}.replace @dialogues
   end
-  
+
   def self.clear_dialogues
     @dialogues = {}
   end
-  
+
   def self.add_dialogue(id, text)
     @dialogues[id] = text
   end
-  
+
   def self.load_rvtext(filename)
     @dialogues = {}
     open(filename, "r:UTF-8") { |f|
@@ -70,18 +70,27 @@ end
 # Add support for the \dialogues message code.
 #
 # Changes:
-#   alias: all_text
+#   alias: add, clear
 #==============================================================================
 class Game_Message
 
-  alias lfs_all_text all_text
-  def all_text
-    result = lfs_all_text
-    if m = LanguageFileSystem::DIALOGUE_CODE.match(result)
+  alias lfs_add add
+  def add(text)
+    if m = LanguageFileSystem::DIALOGUE_CODE.match(text)
       line = LanguageFileSystem::dialogues[m[1]]
-      return line + "\n" if line
+      if line
+        @texts = []
+        lfs_add(line)
+        @message_replaced = true
+      end
     end
-    result
+    lfs_add(text) unless @message_replaced
+  end
+
+  alias lfs_clear clear
+  def clear
+    lfs_clear
+    @message_replaced = false
   end
 
 end
@@ -104,5 +113,5 @@ class Game_Interpreter
     #end
     lfs_setup_choices([choices] + params[1..-1])
   end
-  
+
 end
