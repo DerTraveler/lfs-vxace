@@ -163,5 +163,24 @@ describe LanguageFileSystem do
         eq "MSGBOX:Dialogues have been updated to current file format.\n" \
            "The original file was renamed to 'OldFile.rvtext_backup'"
     end
+
+    it 'leaves up-to-date files as they are' do
+      # Try to update a second time
+      console_output = capture_output do
+        LanguageFileSystem.versioncheck_dialogues_rvtext('OldFile.rvtext')
+      end
+      uptodate_lines = nil
+      open('OldFile.rvtext', 'r:UTF-8') do |f|
+        uptodate_lines = f.readlines
+      end
+
+      # No changes
+      uptodate_lines.each_index do |i|
+        expect(uptodate_lines[i]).to eq @updated_lines[i]
+      end
+
+      # No message box
+      expect(console_output).to be_empty
+    end
   end
 end
