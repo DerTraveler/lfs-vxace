@@ -1,9 +1,14 @@
 2.0:
+
   - REMOVED Feature: USE_DIALOGUE_FILES flag
                      (Was quite meaningless, just don't use the \dialogue[] tag
                       if you don't need it :D)
   - New Feature: Now supports comment lines starting with '#' in the .rvtext files
   - New Feature: Checks the content of the files for validity and produces a log with
                  errors and warnings pointing to the invalid places.
+  - New Feature: Added a new \dialogue![] tag (exclamation mark before brackets)
+                 which uses the message options given in the dialogue file.
+                 The normal \dialogue[] tag will no longer use them but use
+                 those specified in RPG Maker.
   - Changed the property 'no_fast' of scrolling messages to 'scroll_no_fast'
     with a value of either true or false

@@ -33,3 +33,6 @@ MethodLength:
 
 PerlBackrefs:
   Enabled: false
+
+BlockNesting:
+  Enabled: false

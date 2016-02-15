@@ -27,7 +27,7 @@ module LanguageFileSystem
   @log = []
 
   # Regexps for the special commands used in Messages
-  DIALOGUE_CODE = /\\dialogue\[([^\]]+)\]/
+  DIALOGUE_CODE = /\\dialogue(!)?\[([^\]]+)\]/
 
   # Filenames
   DIALOGUE_FILE_PREFIX = 'Dialogues'
@@ -240,13 +240,15 @@ class Game_Message
   alias lfs_add add
   def add(text)
     if (m = LanguageFileSystem::DIALOGUE_CODE.match(text))
-      line = LanguageFileSystem.dialogues[m[1]]
+      line = LanguageFileSystem.dialogues[m[2]]
       if line
         @texts = []
         lfs_add(line)
 
-        options = LanguageFileSystem.dialogue_options[m[1]]
-        set_message_options(options) if options
+        if m[1] == '!' # If it's the \dialogue![...] tag then use options
+          options = LanguageFileSystem.dialogue_options[m[2]]
+          set_message_options(options) if options
+        end
 
         @message_replaced = true
       end
@@ -291,7 +293,7 @@ class Game_Interpreter
     (0...choices.length).each do |i|
       next unless (m = LanguageFileSystem::DIALOGUE_CODE.match(choices[i]))
 
-      line = LanguageFileSystem.dialogues[m[1]]
+      line = LanguageFileSystem.dialogues[m[2]]
       choices[i] = line.split("\n")[0] if line
     end
     lfs_setup_choices([choices] + params[1..-1])
