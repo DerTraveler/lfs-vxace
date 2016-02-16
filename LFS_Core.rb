@@ -160,6 +160,35 @@ module LanguageFileSystem
     end
   end
 
+  def self.page_to_rvtext(prefix, commands)
+    entries = []
+    new_commands = []
+    i = 0
+    current_id = ''
+    current_entry = ''
+    last_code = 0
+    commands.each do |c|
+      case c.code
+      when 101
+        entries <<= current_entry unless current_entry.empty?
+        i += 1
+        current_id = format("#{prefix}%03d", i)
+        current_entry = "<<#{current_id}>>\n"
+        new_commands <<= c
+      when 401
+        current_entry += c.parameters[0] + "\n"
+        new_commands <<= RPG::EventCommand.new(401, 0,
+                                               ["\\dialogue[#{current_id}]"]) \
+          unless last_code == 401
+      else
+        new_commands <<= c
+      end
+      last_code = c.code
+    end
+    entries <<= current_entry unless current_entry.empty?
+    [entries, new_commands]
+  end
+
   #=============================================================================
   # ** LanguageFileSystem (private methods)
   #-----------------------------------------------------------------------------
