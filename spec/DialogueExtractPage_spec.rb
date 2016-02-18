@@ -26,28 +26,27 @@ describe LanguageFileSystem do
     shared_examples 'page extraction' do |tag|
 
       it 'extracts all of the dialogues' do
-        expect(@dialogues).to include('some prefix/001:Hello,' =>
-                                        "Hello,\nwhat are you doing in this" \
-                                        ' lonely place?',
-                                      'some prefix/002-0:Getangr' =>
-                                        '(Get angry)',
-                                      'some prefix/002-1:Staysil' =>
-                                        '(Stay silent)',
-                                      "some prefix/003:Idon'tknowYoutellme," =>
-                                        "I don't know. You tell me, idiot!",
-                                      'some prefix/004:NotsurewhatIshouldsa' =>
-                                        '(Not sure what I should say)')
+        expect(@dialogues).to \
+          contain_exactly(['some prefix/001:Hello,',
+                           "Hello,\nwhat are you doing in this lonely place?"],
+                          ['some prefix/002-0:Getangr', '(Get angry)'],
+                          ['some prefix/002-1:Staysil', '(Stay silent)'],
+                          ["some prefix/003:Idon'tknowYoutellme,",
+                           "I don't know. You tell me, idiot!"],
+                          ['some prefix/004:NotsurewhatIshouldsa',
+                           '(Not sure what I should say)'])
       end
 
       it 'extracts all of the options' do
-        expect(@options).to include('some prefix/001:Hello,' =>
-                                      { face_name: 'Actor1', face_index: 0 },
-                                    "some prefix/003:Idon'tknowYoutellme," =>
-                                      { face_name: 'Actor4', face_index: 2,
-                                        position: 'top' },
-                                    'some prefix/004:NotsurewhatIshouldsa' =>
-                                      { face_name: 'Actor4', face_index: 2,
-                                        position: 'middle', background: 'dim' })
+        expect(@options).to \
+          contain_exactly(['some prefix/001:Hello,',
+                           { face_name: 'Actor1', face_index: 0 }],
+                          ["some prefix/003:Idon'tknowYoutellme,",
+                           { face_name: 'Actor4', face_index: 2,
+                             position: 'top' }],
+                          ['some prefix/004:NotsurewhatIshouldsa',
+                           { face_name: 'Actor4', face_index: 2,
+                             position: 'middle', background: 'dim' }])
       end
 
       it 'converts dialogue related commands' do
