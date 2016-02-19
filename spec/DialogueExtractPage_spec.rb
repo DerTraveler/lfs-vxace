@@ -9,62 +9,74 @@ describe LanguageFileSystem do
 
       it 'extracts all of the dialogues' do
         expect(@dialogues).to \
-          contain_exactly(['some prefix/001:Hello,',
+          contain_exactly(['some prefix/001:Witnessadramaticmeet',
+                           "Witness a dramatic meeting\nOf two men\n" \
+                           "Two men that should become enemies\n" \
+                           "Two men that should become allies\n" \
+                           'Let the games begin'],
+                          ['some prefix/002:Hello,',
                            "Hello,\nwhat are you doing in this lonely place?"],
-                          ['some prefix/002-0:Getangr', '(Get angry)'],
-                          ['some prefix/002-1:Staysil', '(Stay silent)'],
-                          ["some prefix/003:Idon'tknowYoutellme,",
+                          ['some prefix/003-0:Getangr', '(Get angry)'],
+                          ['some prefix/003-1:Staysil', '(Stay silent)'],
+                          ["some prefix/004:Idon'tknowYoutellme,",
                            "I don't know. You tell me, idiot!"],
-                          ['some prefix/004:NotsurewhatIshouldsa',
+                          ['some prefix/005:NotsurewhatIshouldsa',
                            '(Not sure what I should say)'],
-                          ['some prefix/005:Hint:',
+                          ['some prefix/006:Hint:',
                            "Hint:\nTry to find another way to approach that" \
                            ' person.'])
       end
 
       it 'extracts all of the options' do
         expect(@options).to \
-          contain_exactly(['some prefix/001:Hello,',
+          contain_exactly(['some prefix/001:Witnessadramaticmeet',
+                           { scroll_speed: 4, scroll_no_fast: 'true' }],
+                          ['some prefix/002:Hello,',
                            { face_name: 'Actor1', face_index: 0 }],
-                          ["some prefix/003:Idon'tknowYoutellme,",
+                          ["some prefix/004:Idon'tknowYoutellme,",
                            { face_name: 'Actor4', face_index: 2,
                              position: 'top' }],
-                          ['some prefix/004:NotsurewhatIshouldsa',
+                          ['some prefix/005:NotsurewhatIshouldsa',
                            { face_name: 'Actor4', face_index: 2,
                              position: 'middle', background: 'dim' }])
       end
 
       it 'converts dialogue related commands' do
-        expect(@new_page[1].code).to be 401
+        expect(@new_page[1].code).to be 405
         expect(@new_page[1].indent).to be 0
         expect(@new_page[1].parameters).to \
-          eq [tag + '[some prefix/001:Hello,]']
-        expect(@new_page[2].code).to be 102
-        expect(@new_page[2].indent).to be 0
-        expect(@new_page[2].parameters).to \
-          eq [['\dialogue[some prefix/002-0:Getangr]',
-               '\dialogue[some prefix/002-1:Staysil]'], 2]
-        expect(@new_page[5].code).to be 401
-        expect(@new_page[5].indent).to be 1
-        expect(@new_page[5].parameters).to \
-          eq [tag + "[some prefix/003:Idon'tknowYoutellme,]"]
-        expect(@new_page[9].code).to be 401
-        expect(@new_page[9].indent).to be 1
-        expect(@new_page[9].parameters).to \
-          eq [tag + '[some prefix/004:NotsurewhatIshouldsa]']
-        expect(@new_page[13].code).to be 401
-        expect(@new_page[13].indent).to be 0
-        expect(@new_page[13].parameters).to \
-          eq [tag + '[some prefix/005:Hint:]']
-        expect(@new_page.length).to be 15
+          eq [tag + '[some prefix/001:Witnessadramaticmeet]']
+        expect(@new_page[3].code).to be 401
+        expect(@new_page[3].indent).to be 0
+        expect(@new_page[3].parameters).to \
+          eq [tag + '[some prefix/002:Hello,]']
+        expect(@new_page[4].code).to be 102
+        expect(@new_page[4].indent).to be 0
+        expect(@new_page[4].parameters).to \
+          eq [['\dialogue[some prefix/003-0:Getangr]',
+               '\dialogue[some prefix/003-1:Staysil]'], 2]
+        expect(@new_page[7].code).to be 401
+        expect(@new_page[7].indent).to be 1
+        expect(@new_page[7].parameters).to \
+          eq [tag + "[some prefix/004:Idon'tknowYoutellme,]"]
+        expect(@new_page[11].code).to be 401
+        expect(@new_page[11].indent).to be 1
+        expect(@new_page[11].parameters).to \
+          eq [tag + '[some prefix/005:NotsurewhatIshouldsa]']
+        expect(@new_page[15].code).to be 401
+        expect(@new_page[15].indent).to be 0
+        expect(@new_page[15].parameters).to \
+          eq [tag + '[some prefix/006:Hint:]']
+        expect(@new_page.length).to be 17
       end
 
       it 'leaves unrelated commands untouched' do
         expect(@new_page[0]).to be EVENT_PAGE[0]
-        [3, 4, 6, 7, 8, 10, 11, 12].each do |i|
-          expect(@new_page[i]).to be EVENT_PAGE[i + 1]
+        expect(@new_page[2]).to be EVENT_PAGE[6]
+        [5, 6, 8, 9, 10, 12, 13, 14].each do |i|
+          expect(@new_page[i]).to be EVENT_PAGE[i + 5]
         end
-        expect(@new_page[14]).to be EVENT_PAGE[16]
+        expect(@new_page[16]).to be EVENT_PAGE[22]
       end
     end
 

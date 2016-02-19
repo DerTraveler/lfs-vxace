@@ -1,7 +1,13 @@
 # encoding: UTF-8
 
 EVENT_PAGE = \
-  [RPG::EventCommand.new(101, 0, ['Actor1', 0, 0, 2]),
+  [RPG::EventCommand.new(105, 0, [4, true]),
+   RPG::EventCommand.new(405, 0, ['Witness a dramatic meeting']),
+   RPG::EventCommand.new(405, 0, ['Of two men']),
+   RPG::EventCommand.new(405, 0, ['Two men that should become enemies']),
+   RPG::EventCommand.new(405, 0, ['Two men that should become allies']),
+   RPG::EventCommand.new(405, 0, ['Let the games begin']),
+   RPG::EventCommand.new(101, 0, ['Actor1', 0, 0, 2]),
    RPG::EventCommand.new(401, 0, ['Hello,']),
    RPG::EventCommand.new(401, 0, ['what are you doing in this lonely place?']),
    RPG::EventCommand.new(102, 0, [['(Get angry)',

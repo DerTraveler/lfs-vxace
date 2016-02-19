@@ -181,7 +181,7 @@ module LanguageFileSystem
     last_code = 0
     commands.each do |c|
       case c.code
-      when 101       # Show Text
+      when 101, 105  # Show (Scrolling) Text
         if current_id
           dialogues[current_id] = current_entry.rstrip
           i += 1
@@ -190,17 +190,24 @@ module LanguageFileSystem
         current_entry = ''
 
         current_options = {}
-        unless c.parameters[0] == ''
-          current_options[:face_name] = c.parameters[0]
-          current_options[:face_index] = c.parameters[1]
+        if c.code == 101
+          unless c.parameters[0] == ''
+            current_options[:face_name] = c.parameters[0]
+            current_options[:face_index] = c.parameters[1]
+          end
+          current_options[:background] = MSG_BG[c.parameters[2]] \
+            unless c.parameters[2] == 0
+          current_options[:position] = MSG_POS[c.parameters[3]] \
+            unless c.parameters[3] == 2
+        else
+          current_options[:scroll_speed] = c.parameters[0] \
+            unless c.parameters[0] == 2
+          current_options[:scroll_no_fast] = "#{c.parameters[1]}" \
+            unless c.parameters[1] == false
         end
-        current_options[:background] = MSG_BG[c.parameters[2]] \
-          unless c.parameters[2] == 0
-        current_options[:position] = MSG_POS[c.parameters[3]] \
-          unless c.parameters[3] == 2
         new_commands <<= c
-      when 401       # Show Text body
-        unless last_code == 401
+      when 401, 405  # Show (Scrolling) Text body
+        unless last_code == c.code
           if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0])
             # Ignore messages that have already been extracted
             current_id = nil
@@ -209,7 +216,7 @@ module LanguageFileSystem
           end
           current_id += clean_for_id(c.parameters[0], 20) # create id
           tag = with_options ? 'dialogue!' : 'dialogue'
-          new_commands <<= RPG::EventCommand.new(401, c.indent,
+          new_commands <<= RPG::EventCommand.new(c.code, c.indent,
                                                  ["\\#{tag}[#{current_id}]"])
 
           options[current_id] = current_options unless current_options.empty?
@@ -260,6 +267,10 @@ module LanguageFileSystem
           if options[id][:background]
         header += "<<position: #{options[id][:position]}>>\n" \
           if options[id][:position]
+        header += "<<scroll_speed: #{options[id][:scroll_speed]}>>\n" \
+          if options[id][:scroll_speed]
+        header += "<<scroll_no_fast: #{options[id][:scroll_no_fast]}>>\n" \
+          if options[id][:scroll_no_fast]
       end
       result <<= "#{header}#{entry}\n"
     end
