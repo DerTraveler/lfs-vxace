@@ -3,6 +3,7 @@
   - REMOVED Feature: USE_DIALOGUE_FILES flag
                      (Was quite meaningless, just don't use the \dialogue[] tag
                       if you don't need it :D)
+  - Bugfix: Extraction no longer ignores Battle Events
   - New Feature: Now supports comment lines starting with '#' in the .rvtext files
   - New Feature: Checks the content of the files for validity and produces a log with
                  errors and warnings pointing to the invalid places.

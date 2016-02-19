@@ -186,7 +186,7 @@ module LanguageFileSystem
           dialogues[current_id] = current_entry.rstrip
           i += 1
         end
-        current_id = format("#{prefix}%03d:", i)
+        current_id = format("#{prefix}%03d", i)
         current_entry = ''
 
         current_options = {}
@@ -214,7 +214,7 @@ module LanguageFileSystem
             new_commands <<= c
             next
           end
-          current_id += clean_for_id(c.parameters[0], 20) # create id
+          current_id += clean_for_id(c.parameters[0], 15) # create id
           tag = with_options ? 'dialogue!' : 'dialogue'
           new_commands <<= RPG::EventCommand.new(c.code, c.indent,
                                                  ["\\#{tag}[#{current_id}]"])
@@ -235,8 +235,8 @@ module LanguageFileSystem
             new_choices <<= c.parameters[0][k]
             next
           end
-          current_id = format("#{prefix}%03d-%d:", i, k)
-          current_id += clean_for_id(c.parameters[0][k], 7)
+          current_id = format("#{prefix}%03d%d", i, k)
+          current_id += clean_for_id(c.parameters[0][k], 8)
           dialogues[current_id] = c.parameters[0][k].rstrip
           new_choices <<= "\\dialogue[#{current_id}]"
         end
@@ -275,6 +275,53 @@ module LanguageFileSystem
       result <<= "#{header}#{entry}\n"
     end
     result
+  end
+
+  def self.export_rvtext
+    open('DialoguesExtracted.rvtext', 'w:UTF-8') do |output|
+      map_infos = load_data('Data/MapInfos.rvdata2')
+      map_infos.each_key do |m_id|
+        map_prefix = format("M%03d#{clean_for_id(map_infos[m_id].name, 8)}/",
+                            m_id)
+        map = load_data(format('Data/Map%03d.rvdata2', m_id))
+        map.events.each_key do |e_id|
+          event = map.events[e_id]
+          event_prefix = format("%03d#{clean_for_id(event.name, 7)}/", e_id)
+          event.pages.each_index do |p_id|
+            dialogues, _, _ = \
+              extract_page(format("#{map_prefix + event_prefix}%02d/",
+                                  p_id + 1),
+                           event.pages[p_id].list)
+            # event.pages[p_id].list = new_list
+            create_rvtext(dialogues).each { |entry| output.write(entry) }
+          end
+        end
+      end
+
+      common_events = load_data('Data/CommonEvents.rvdata2')
+      common_events.each do |c_event|
+        next unless c_event
+        dialogues, _, _ = \
+          extract_page(format("C%03d#{clean_for_id(c_event.name, 15)}/",
+                              c_event.id),
+                       c_event.list)
+        # c_event.list = new_list
+        create_rvtext(dialogues).each { |entry| output.write(entry) }
+      end
+
+      troops = load_data('Data/Troops.rvdata2')
+      troops.each do |t|
+        next unless t
+        t_prefix = format("B%03d#{clean_for_id(t.name, 15)}/", t.id)
+        t.pages.each_index do |p_id|
+          dialogues, _, _ = \
+            extract_page(format("#{t_prefix}%02d/", p_id + 1),
+                         t.pages[p_id].list)
+          # t.pages[p_id].list = new_list
+          create_rvtext(dialogues).each { |entry| output.write(entry) }
+        end
+      end
+    end
   end
 
   #=============================================================================
