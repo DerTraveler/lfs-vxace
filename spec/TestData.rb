@@ -17,4 +17,8 @@ EVENT_PAGE = [RPG::EventCommand.new(101, 0, ['Actor1', 0, 0, 2]),
                                              ' say)']),
               RPG::EventCommand.new(0, 1, []),   # Branch End
               RPG::EventCommand.new(404, 0, []), # Choice Options End
+              RPG::EventCommand.new(101, 0, ['', 0, 0, 2]),
+              RPG::EventCommand.new(401, 0, ['Hint:']),
+              RPG::EventCommand.new(401, 0, ['Try to find another way to' \
+                                             ' approach that person.']),
               RPG::EventCommand.new(0, 0, [])]   # Event End

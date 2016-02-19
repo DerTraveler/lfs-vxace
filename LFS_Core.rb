@@ -168,7 +168,7 @@ module LanguageFileSystem
     options = {}
     new_commands = []
 
-    i = 0
+    i = 1
     current_id = nil
     current_entry = ''
     current_options = {}
@@ -176,8 +176,10 @@ module LanguageFileSystem
     commands.each do |c|
       case c.code
       when 101
-        dialogues[current_id] = current_entry.rstrip if current_id
-        i += 1
+        if current_id
+          dialogues[current_id] = current_entry.rstrip
+          i += 1
+        end
         current_id = format("#{prefix}%03d:", i)
         current_entry = ''
 
@@ -193,20 +195,32 @@ module LanguageFileSystem
         new_commands <<= c
       when 401
         unless last_code == 401
-          current_id += clean_for_id(c.parameters[0], 20)
+          if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0])
+            # Ignore messages that have already been extracted
+            current_id = nil
+            new_commands <<= c
+            next
+          end
+          current_id += clean_for_id(c.parameters[0], 20) # create id
           tag = with_options ? 'dialogue!' : 'dialogue'
           new_commands <<= RPG::EventCommand.new(401, c.indent,
                                                  ["\\#{tag}[#{current_id}]"])
 
-          options[current_id] = current_options
+          options[current_id] = current_options unless current_options.empty?
         end
         current_entry += c.parameters[0] + "\n"
       when 102
-        dialogues[current_id] = current_entry.rstrip if current_id
-        i += 1
+        if current_id
+          dialogues[current_id] = current_entry.rstrip
+          i += 1
+        end
         current_entry = ''
         new_choices = []
         c.parameters[0].each_index do |k|
+          if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0][k])
+            new_choices <<= c.parameters[0][k]
+            next
+          end
           current_id = format("#{prefix}%03d-%d:", i, k)
           current_id += clean_for_id(c.parameters[0][k], 7)
           dialogues[current_id] = c.parameters[0][k].rstrip
@@ -215,6 +229,7 @@ module LanguageFileSystem
         new_commands <<= RPG::EventCommand.new(102, c.indent,
                                                [new_choices, c.parameters[1]])
         current_id = nil
+        i += 1
       else
         new_commands <<= c
       end
