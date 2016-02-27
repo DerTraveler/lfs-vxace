@@ -32,6 +32,19 @@ describe Game_Message do
           expect($game_message.all_text).to eq "Unaffected message!\n"
         end
 
+        it "supports setting of message options" do
+          LanguageFileSystem::set_dialogue_options("hello", { face_name: "Actor1",
+                                                              face_index: 2,
+                                                              position: "top",
+                                                              background: "transparent" })
+          $game_message.add("\\dialogue[hello]")
+
+          expect($game_message.face_name).to eq "Actor1"
+          expect($game_message.face_index).to eq 2
+          expect($game_message.position).to eq 0
+          expect($game_message.background).to eq 2
+        end
+
       end
 
       context "but the dialogue id doesn't exist" do
