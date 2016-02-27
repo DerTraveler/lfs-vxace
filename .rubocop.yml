@@ -1,0 +1,32 @@
+AllCops:
+  Exclude:
+    - 'lib/**/**'
+    - 'test/**/**'
+    - 'LFS_Core-1.3.rb'
+
+FileName:
+  Enabled: false
+
+GlobalVars:
+  Enabled: false
+
+Encoding:
+  Enabled: false
+
+LeadingCommentSpace:
+  Enabled: false
+
+Alias:
+  Enabled: false
+
+ClassAndModuleCamelCase:
+  Enabled: false
+
+AccessorMethodName:
+  Enabled: false
+
+CyclomaticComplexity:
+  Enabled: false
+
+MethodLength:
+  Enabled: false
