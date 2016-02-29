@@ -278,6 +278,7 @@ module LanguageFileSystem
   end
 
   def self.export_rvtext
+    Dir.mkdir('Extracted')
     open('DialoguesExtracted.rvtext', 'w:UTF-8') do |output|
       map_infos = load_data('Data/MapInfos.rvdata2')
       map_infos.each_key do |m_id|
@@ -288,39 +289,42 @@ module LanguageFileSystem
           event = map.events[e_id]
           event_prefix = format("%03d#{clean_for_id(event.name, 7)}/", e_id)
           event.pages.each_index do |p_id|
-            dialogues, _, _ = \
+            dialogues, _, new_list = \
               extract_page(format("#{map_prefix + event_prefix}%02d/",
                                   p_id + 1),
                            event.pages[p_id].list)
-            # event.pages[p_id].list = new_list
+            event.pages[p_id].list = new_list
             create_rvtext(dialogues).each { |entry| output.write(entry) }
           end
         end
+        save_data(map, format('Extracted/Map%03d.rvdata2', m_id))
       end
 
       common_events = load_data('Data/CommonEvents.rvdata2')
       common_events.each do |c_event|
         next unless c_event
-        dialogues, _, _ = \
+        dialogues, _, new_list = \
           extract_page(format("C%03d#{clean_for_id(c_event.name, 15)}/",
                               c_event.id),
                        c_event.list)
-        # c_event.list = new_list
+        c_event.list = new_list
         create_rvtext(dialogues).each { |entry| output.write(entry) }
       end
+      save_data(common_events, 'Extracted/CommonEvents.rvdata2')
 
       troops = load_data('Data/Troops.rvdata2')
       troops.each do |t|
         next unless t
         t_prefix = format("B%03d#{clean_for_id(t.name, 15)}/", t.id)
         t.pages.each_index do |p_id|
-          dialogues, _, _ = \
+          dialogues, _, new_list = \
             extract_page(format("#{t_prefix}%02d/", p_id + 1),
                          t.pages[p_id].list)
-          # t.pages[p_id].list = new_list
+          t.pages[p_id].list = new_list
           create_rvtext(dialogues).each { |entry| output.write(entry) }
         end
       end
+      save_data(troops, 'Extracted/Troops.rvdata2')
     end
   end
 

@@ -79,6 +79,10 @@ describe LanguageFileSystem do
 
     after(:all) do
       File.delete('DialoguesExtracted.rvtext')
+      Dir.glob('Extracted/*.rvdata2').each do |f|
+        File.delete(f)
+      end
+      Dir.delete('Extracted')
     end
 
     it 'does not change the original files' do
@@ -122,5 +126,49 @@ describe LanguageFileSystem do
         "I'm gunna eat, huuuuuuman!\n"
     end
 
+    it 'creates updated versions of the maps' do
+      map1 = load_data('Extracted/Map001.rvdata2')
+      expect(map1.events[1].pages[0].list[1].parameters[0]).to eq \
+        '\dialogue[M001Mysterio/001Strange/01/001Hello,]'
+      expect(map1.events[1].pages[0].list[3].parameters[0]).to eq \
+        "\\dialogue[M001Mysterio/001Strange/01/002Idon'tknowYoute]"
+      expect(map1.events[1].pages[0].list.length).to be 6
+
+      expect(map1.events[1].pages[1].list[1].parameters[0]).to eq \
+        '\dialogue[M001Mysterio/001Strange/02/001Youarestillhere]'
+      expect(map1.events[1].pages[1].list.length).to be 3
+
+      expect(map1.events[2].pages[0].list[1].parameters[0]).to eq \
+        '\dialogue[M001Mysterio/002Autosta/01/001Thisisthestoryo]'
+      expect(map1.events[2].pages[0].list.length).to be 4
+
+      expect(map1.events[3].pages[0].list[1].parameters[0]).to eq \
+        '\dialogue[M001Mysterio/003Telepor/01/001ShouldIreallyen]'
+      expect(map1.events[3].pages[0].list[2].parameters[0]).to eq \
+        ['\dialogue[M001Mysterio/003Telepor/01/0020Surethin]',
+         '\dialogue[M001Mysterio/003Telepor/01/0021Wwaitamo]']
+      expect(map1.events[3].pages[0].list[11].parameters[0]).to eq \
+        '\dialogue[M001Mysterio/003Telepor/01/003Maybeanothertim]'
+      expect(map1.events[3].pages[0].list.length).to be 17
+
+      map2 = load_data('Extracted/Map002.rvdata2')
+      expect(map2.events[1].pages[0].list[1].parameters[0]).to eq \
+        '\dialogue[M002EndlessM/001Flame/01/001Whatisthis?]'
+      expect(map2.events[1].pages[0].list.length).to be 12
+    end
+
+    it 'creates updated versions of the common events' do
+      ce = load_data('Extracted/CommonEvents.rvdata2')
+      expect(ce[4].list[1].parameters[0]).to eq \
+        '\dialogue[C004SpecialScript/001Thiswillneverbe]'
+      expect(ce[4].list.length).to be 3
+    end
+
+    it 'creates updated versions of the battle events' do
+      troops = load_data('Extracted/Troops.rvdata2')
+      expect(troops[13].pages[0].list[1].parameters[0]).to eq \
+        "\\dialogue[B013Orc*3/01/001I'mgunnaeat,huu]"
+      expect(troops[13].pages[0].list.length).to be 3
+    end
   end
 end
