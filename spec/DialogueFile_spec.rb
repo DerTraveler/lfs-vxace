@@ -1,5 +1,7 @@
 # encoding: UTF-8
 
+require_relative 'HelperMethods'
+
 describe LanguageFileSystem do
 
   SIMPLE_FILE = ['<<a simple id>>',
@@ -24,17 +26,27 @@ describe LanguageFileSystem do
                        '<<background: dim>>',
                        'Sorry for the trouble caused by me!']
 
+  OLD_FILE = ['<<OldScrollMessage>>',
+              '<<no_fast>>',
+              'Take it easy!',
+              '<<HelloThere>>',
+              '<<background: transparent>>',
+              'What was that???']
+
+  FILES = { 'SimpleFile.rvtext' => SIMPLE_FILE,
+            'FileWithOptions.rvtext' => FILE_WITH_OPTIONS,
+            'OldFile.rvtext' => OLD_FILE }
+
   before(:all) do
-    open('SimpleFile.rvtext', 'w:UTF-8') do |f|
-      f.write(SIMPLE_FILE.join("\n") + "\n")
-    end
-    open('FileWithOptions.rvtext', 'w:UTF-8') do |f|
-      f.write(FILE_WITH_OPTIONS.join("\n") + "\n")
+    FILES.each do |filename, content|
+      open(filename, 'w:UTF-8') do |f|
+        f.write(content.join("\n") + "\n")
+      end
     end
   end
 
   after(:all) do
-    File.delete('SimpleFile.rvtext', 'FileWithOptions.rvtext')
+    File.delete(*FILES.keys)
   end
 
   describe '#load_dialogues_rvtext' do
@@ -102,5 +114,54 @@ describe LanguageFileSystem do
     end
   end
 
-  describe '#versioncheck'
+  describe '#versioncheck_dialogue_rvtext' do
+    before(:all) do
+      @console_output = capture_output do
+        LanguageFileSystem.versioncheck_dialogues_rvtext('OldFile.rvtext')
+      end
+
+      open('OldFile.rvtext', 'r:UTF-8') do |f|
+        @updated_lines = f.readlines
+      end
+    end
+
+    after(:all) do
+      File.delete('OldFile.rvtext_backup')
+    end
+
+    it 'adds the current version header' do
+      expect(@updated_lines[0]).to \
+        eq "# LFS DIALOGUES VERSION #{LanguageFileSystem::CURRENT_VERSION}\n"
+    end
+
+    it 'updates the file contents to the current version (20)' do
+      @updated_lines.each_index do |i|
+        case i
+        when 0
+          next
+        when 2
+          expect(@updated_lines[i]).to eq "<<scroll_fast: true>>\n"
+        else
+          expect(@updated_lines[i]).to eq(OLD_FILE[i - 1] + "\n")
+        end
+      end
+    end
+
+    it 'creates a backup of the old file' do
+      backup_lines = nil
+      open('OldFile.rvtext_backup', 'r:UTF-8') do |f|
+        backup_lines = f.readlines
+      end
+
+      backup_lines.each_index do |i|
+        expect(backup_lines[i]).to eq(OLD_FILE[i] + "\n")
+      end
+    end
+
+    it 'shows a messagebox to notify the user' do
+      expect(@console_output).to \
+        eq "MSGBOX:Dialogues have been updated to current file format.\n" \
+           "The original file was renamed to 'OldFile.rvtext_backup'"
+    end
+  end
 end

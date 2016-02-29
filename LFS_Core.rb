@@ -18,6 +18,8 @@ module LanguageFileSystem
   #
   #############################################################################
 
+  CURRENT_VERSION = 20
+
   @dialogues = {}
   @dialogue_options = {}
 
@@ -122,6 +124,42 @@ module LanguageFileSystem
     clear_log_context
   end
 
+  DIALOGUE_HEADER = /# LFS DIALOGUES VERSION (\d+)/
+
+  def self.versioncheck_dialogues_rvtext(filename)
+    header = nil
+    content = nil
+    version = 10
+
+    open(filename, 'r:UTF-8') do |f|
+      header, sep, content = f.read.partition("\n")
+      if (m = DIALOGUE_HEADER.match(header))
+        version = m[1].to_i
+      else
+        # If the header does not exist, then the first line is part of then
+        # normal file content - so it needs to be added again
+        content = header + sep + content
+        header = nil
+      end
+    end
+
+    unless version == CURRENT_VERSION
+      # Backup old file
+      open(filename + '_backup', 'w:UTF-8') do |backup|
+        backup.write(header + "\n") if header
+        backup.write(content)
+      end
+      # Convert to current version
+      content = update_dialogues_rvtext(version, content)
+      open(filename, 'w:UTF-8') do |f|
+        f.write("# LFS DIALOGUES VERSION #{CURRENT_VERSION}\n")
+        f.write(content)
+      end
+      msgbox "Dialogues have been updated to current file format.\n" \
+             "The original file was renamed to '#{filename}_backup'"
+    end
+  end
+
   #=============================================================================
   # ** LanguageFileSystem (private methods)
   #-----------------------------------------------------------------------------
@@ -177,6 +215,14 @@ module LanguageFileSystem
       else
         log_error("Invalid dialogue option '#{key}'")
       end
+    end
+
+    def update_dialogues_rvtext(version, content)
+      result = String.new(content)
+
+      result.gsub!('<<no_fast>>', '<<scroll_fast: true>>') if version < 20
+
+      result
     end
   end
 end
