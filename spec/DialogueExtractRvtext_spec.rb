@@ -27,12 +27,10 @@ describe LanguageFileSystem do
       end
 
       it 'returns a converted command list' do
-        expect(@new_page[0].code).to be 101
-        expect(@new_page[0].parameters).to eq ['Actor1', 0, 0, 2]
+        expect(@new_page[0]).to be page_1[0]
         expect(@new_page[1].code).to be 401
         expect(@new_page[1].parameters).to eq ['\dialogue[some prefix/001]']
-        expect(@new_page[2].code).to be 101
-        expect(@new_page[2].parameters).to eq ['Actor4', 0, 0, 2]
+        expect(@new_page[2]).to be page_1[3]
         expect(@new_page[3].code).to be 401
         expect(@new_page[3].parameters).to eq ['\dialogue[some prefix/002]']
 
@@ -40,22 +38,33 @@ describe LanguageFileSystem do
       end
     end
 
-    # context 'when extracting message options' do
-    #   before(:all) do
-    #     @entries, @new_page = LanguageFileSystem.page_to_rvtext('some prefix/',
-    #                                                             @page_1,
-    #                                                             true)
-    #   end
-    #
-    #   it 'converts a page a corresponding rvtext entries' do
-    #     expect(@entries).to include "<<some prefix/001>>\n" \
-    #                                 "<<face: Actor1, 0>>\nHello,\n" \
-    #                                 "what are you doing in this lonely " \
-    #                                 "place?\n",
-    #                                 "<<some prefix/002>>\n" \
-    #                                 "<<face: Actor4, 0>>\n" \
-    #                                 "I don't know. You tell me!\n"
-    #   end
-    # end
+    context 'when extracting message options' do
+      before(:each) do
+        @entries, @new_page = LanguageFileSystem.page_to_rvtext('some prefix/',
+                                                                page_1,
+                                                                true)
+      end
+
+      it 'converts a page a corresponding rvtext entries' do
+        expect(@entries).to include "<<some prefix/001>>\n" \
+                                    "<<face: Actor1, 0>>\nHello,\n" \
+                                    'what are you doing in this lonely ' \
+                                    "place?\n",
+                                    "<<some prefix/002>>\n" \
+                                    "<<face: Actor4, 0>>\n" \
+                                    "I don't know. You tell me!\n"
+      end
+
+      it 'returns a converted command list' do
+        expect(@new_page[0]).to be page_1[0]
+        expect(@new_page[1].code).to be 401
+        expect(@new_page[1].parameters).to eq ['\dialogue![some prefix/001]']
+        expect(@new_page[2]).to be page_1[3]
+        expect(@new_page[3].code).to be 401
+        expect(@new_page[3].parameters).to eq ['\dialogue![some prefix/002]']
+
+        expect(@new_page.length).to be 4
+      end
+    end
   end
 end
