@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-EVENT_PAGE = \
+PAGE = \
   [RPG::EventCommand.new(105, 0, [4, true]),
    RPG::EventCommand.new(405, 0, ['Witness a dramatic meeting']),
    RPG::EventCommand.new(405, 0, ['Of two men']),
@@ -27,7 +27,7 @@ EVENT_PAGE = \
                                   ' person.']),
    RPG::EventCommand.new(0, 0, [])]   # Event End
 
-EXTRACTED_PAGE = \
+PAGE_EXTRACTED = \
   [RPG::EventCommand.new(101, 0, ['Actor1', 0, 0, 2]),
    RPG::EventCommand.new(401, 0, ['\dialogue[some prefix/001:Hello,]']),
    RPG::EventCommand.new(102, 0,

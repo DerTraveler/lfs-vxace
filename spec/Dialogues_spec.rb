@@ -2,17 +2,14 @@
 
 describe Game_Message do
   before(:each) do
-    LanguageFileSystem.clear_dialogues
-    LanguageFileSystem.add_dialogue('hello', 'Some dialogue')
-    LanguageFileSystem.set_dialogue_options('hello',
-                                            face_name: 'Actor1',
-                                            face_index: 2,
-                                            position: 'top',
-                                            background: 'transparent',
-                                            scroll_speed: 5,
-                                            scroll_no_fast: 'true')
-    LanguageFileSystem.add_dialogue('multiline',
-                                    "This message\nhas several\nlines, yeah!")
+    LanguageFileSystem.send(:clear_dialogues)
+    LanguageFileSystem.send(:add_dialogue, 'hello', 'Some dialogue')
+    LanguageFileSystem.send(:set_dialogue_options, 'hello',
+                            face_name: 'Actor1', face_index: 2,
+                            position: 'top', background: 'transparent',
+                            scroll_speed: 5, scroll_no_fast: 'true')
+    LanguageFileSystem.send(:add_dialogue, 'multiline',
+                            "This message\nhas several\nlines, yeah!")
     $game_message = Game_Message.new
   end
 

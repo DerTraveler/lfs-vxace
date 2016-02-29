@@ -52,7 +52,7 @@ describe LanguageFileSystem do
   describe '#load_dialogues_rvtext' do
     context 'with a simple valid file' do
       before(:all) do
-        LanguageFileSystem.load_dialogues_rvtext('SimpleFile.rvtext')
+        LanguageFileSystem.send(:load_dialogues_rvtext, 'SimpleFile.rvtext')
       end
 
       it 'loads the file into the dialogue hash' do
@@ -63,13 +63,14 @@ describe LanguageFileSystem do
       end
 
       it 'produces no log entries' do
-        expect(LanguageFileSystem.log).to be_empty
+        expect(LanguageFileSystem.send(:log)).to be_empty
       end
     end
 
     context 'with a file containing dialogue options' do
       before(:all) do
-        LanguageFileSystem.load_dialogues_rvtext('FileWithOptions.rvtext')
+        LanguageFileSystem.send(:load_dialogues_rvtext,
+                                'FileWithOptions.rvtext')
       end
 
       it 'loads all dialogue texts, also empty ones' do
@@ -91,7 +92,7 @@ describe LanguageFileSystem do
       end
 
       it 'produces errors for the invalid options' do
-        expect(LanguageFileSystem.log).to \
+        expect(LanguageFileSystem.send(:log)).to \
           include({ file: 'FileWithOptions.rvtext', line: 6, type: :error,
                     msg: 'Index of face must be between 0 and 7!' },
                   { file: 'FileWithOptions.rvtext', line: 7, type: :error,
@@ -107,7 +108,7 @@ describe LanguageFileSystem do
       end
 
       it 'produces an warning for the empty message' do
-        expect(LanguageFileSystem.log).to \
+        expect(LanguageFileSystem.send(:log)).to \
           include(file: 'FileWithOptions.rvtext', line: 5, type: :warning,
                   msg: "Message with id 'empty bad message' is empty!")
       end
@@ -117,7 +118,8 @@ describe LanguageFileSystem do
   describe '#versioncheck_dialogue_rvtext' do
     before(:all) do
       @console_output = capture_output do
-        LanguageFileSystem.versioncheck_dialogues_rvtext('OldFile.rvtext')
+        LanguageFileSystem.send(:versioncheck_dialogues_rvtext,
+                                'OldFile.rvtext')
       end
 
       open('OldFile.rvtext', 'r:UTF-8') do |f|
@@ -167,7 +169,8 @@ describe LanguageFileSystem do
     it 'leaves up-to-date files as they are' do
       # Try to update a second time
       console_output = capture_output do
-        LanguageFileSystem.versioncheck_dialogues_rvtext('OldFile.rvtext')
+        LanguageFileSystem.send(:versioncheck_dialogues_rvtext,
+                                'OldFile.rvtext')
       end
       uptodate_lines = nil
       open('OldFile.rvtext', 'r:UTF-8') do |f|

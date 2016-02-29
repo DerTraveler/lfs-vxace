@@ -17,7 +17,6 @@ module LanguageFileSystem
   # Do not edit past this point, if you have no idea, what you're doing ;)
   #
   #############################################################################
-
   CURRENT_VERSION = 20
 
   @dialogues = {}
@@ -33,311 +32,120 @@ module LanguageFileSystem
   DIALOGUE_FILE_PREFIX = 'Dialogues'
   RVTEXT_EXT = 'rvtext'
 
-  # File entry format Regexp
-  ENTRY_METADATA = /^<<([^>]+)>>$/
-
-  def self.dialogues
-    {}.replace @dialogues
-  end
-
-  def self.dialogue_options
-    {}.replace @dialogue_options
-  end
-
-  def self.log
-    [].replace @log
-  end
-
-  def self.clear_dialogues
-    @dialogues = {}
-    @dialogue_options = {}
-  end
-
-  def self.add_dialogue(id, text)
-    @dialogues[id] = text
-  end
-
-  def self.set_dialogue_options(id, options)
-    @dialogue_options[id] = options
-  end
-
-  def self.clear_log_context
-    @log_context = {}
-  end
-
-  def self.log_warning(message, data = {})
-    @log += [@log_context.merge(type: :warning).merge(data).merge(msg: message)]
-  end
-
-  def self.log_error(message, data = {})
-    @log += [@log_context.merge(type: :error).merge(data).merge(msg: message)]
-  end
-
-  DIALOGUE_ID = /<<([^>]+)>>/
-  DIALOGUE_OPT = /<<([^:>]+):([^>]+)>>/
-
-  def self.load_dialogues_rvtext(filename)
-    clear_dialogues
-
-    open(filename, 'r:UTF-8') do |f|
-      @log_context[:file] = filename
-      @log_context[:line] = 0
-
-      current_id = nil
-      current_text = ''
-      current_options = {}
-
-      message_start_line = nil
-
-      f.each_line do |l|
-        @log_context[:line] += 1
-
-        next if l.start_with?('#') # Ignore comment lines
-        case l
-        when DIALOGUE_OPT
-          validate_dialogue_option(current_options, $1.strip, $2.strip)
-        when DIALOGUE_ID # start of new message
-          if current_id
-            if current_text.empty?
-              log_warning("Message with id '#{current_id}' is empty!",
-                          line: message_start_line)
-            end
-            add_dialogue(current_id, current_text.rstrip)
-            set_dialogue_options(current_id, current_options)
-          end
-          current_id = $1
-          current_text = ''
-          current_options = {}
-          message_start_line = @log_context[:line]
-        else
-          current_text += l
-        end
-      end
-
-      # Add last dialogue
-      if current_id
-        add_dialogue(current_id, current_text.rstrip)
-        set_dialogue_options(current_id, current_options)
-      end
-    end
-
-    clear_log_context
-  end
-
-  DIALOGUE_HEADER = /# LFS DIALOGUES VERSION (\d+)/
-
-  def self.versioncheck_dialogues_rvtext(filename)
-    header = nil
-    content = nil
-    version = 10
-
-    open(filename, 'r:UTF-8') do |f|
-      header, sep, content = f.read.partition("\n")
-      if (m = DIALOGUE_HEADER.match(header))
-        version = m[1].to_i
-      else
-        # If the header does not exist, then the first line is part of then
-        # normal file content - so it needs to be added again
-        content = header + sep + content
-        header = nil
-      end
-    end
-
-    unless version == CURRENT_VERSION
-      # Backup old file
-      open(filename + '_backup', 'w:UTF-8') do |backup|
-        backup.write(header + "\n") if header
-        backup.write(content)
-      end
-      # Convert to current version
-      content = update_dialogues_rvtext(version, content)
-      open(filename, 'w:UTF-8') do |f|
-        f.write("# LFS DIALOGUES VERSION #{CURRENT_VERSION}\n")
-        f.write(content)
-      end
-      msgbox "Dialogues have been updated to current file format.\n" \
-             "The original file was renamed to '#{filename}_backup'"
-    end
-  end
-
+  # Mapping between indexes used in RPG Maker and literal parameters
   MSG_POS = %w(top middle bottom)
   MSG_BG = %w(normal dim transparent)
 
-  # Extracts an event page into dialogue and option hashes.
-  # A converted version is of the event page using \dialogue[] tags instead of
-  # the actual messages is returned as third result.
-  # with_options determines whether the messages should be replaced with the
-  # \dialogue![] tag instead of the \dialogue[] tag.
-  # All generated IDs will start with the prefix.
-  def self.extract_page(prefix, commands, with_options = false)
-    dialogues = {}
-    options = {}
-    new_commands = []
-
-    i = 1
-    current_id = nil
-    current_entry = ''
-    current_options = {}
-    last_code = 0
-    commands.each do |c|
-      case c.code
-      when 101, 105  # Show (Scrolling) Text
-        if current_id
-          dialogues[current_id] = current_entry.rstrip
-          i += 1
-        end
-        current_id = format("#{prefix}%03d", i)
-        current_entry = ''
-
-        current_options = {}
-        if c.code == 101
-          unless c.parameters[0] == ''
-            current_options[:face_name] = c.parameters[0]
-            current_options[:face_index] = c.parameters[1]
-          end
-          current_options[:background] = MSG_BG[c.parameters[2]] \
-            unless c.parameters[2] == 0
-          current_options[:position] = MSG_POS[c.parameters[3]] \
-            unless c.parameters[3] == 2
-        else
-          current_options[:scroll_speed] = c.parameters[0] \
-            unless c.parameters[0] == 2
-          current_options[:scroll_no_fast] = "#{c.parameters[1]}" \
-            unless c.parameters[1] == false
-        end
-        new_commands <<= c
-      when 401, 405  # Show (Scrolling) Text body
-        unless last_code == c.code
-          if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0])
-            # Ignore messages that have already been extracted
-            current_id = nil
-            new_commands <<= c
-            next
-          end
-          current_id += clean_for_id(c.parameters[0], 15) # create id
-          tag = with_options ? 'dialogue!' : 'dialogue'
-          new_commands <<= RPG::EventCommand.new(c.code, c.indent,
-                                                 ["\\#{tag}[#{current_id}]"])
-
-          options[current_id] = current_options unless current_options.empty?
-        end
-        current_entry += c.parameters[0] + "\n"
-      when 102       # Show Choices
-        if current_id
-          dialogues[current_id] = current_entry.rstrip
-          i += 1
-        end
-        current_entry = ''
-        new_choices = []
-        c.parameters[0].each_index do |k|
-          if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0][k])
-            # Ignore choices that have already been extracted
-            new_choices <<= c.parameters[0][k]
-            next
-          end
-          current_id = format("#{prefix}%03d%d", i, k)
-          current_id += clean_for_id(c.parameters[0][k], 8)
-          dialogues[current_id] = c.parameters[0][k].rstrip
-          new_choices <<= "\\dialogue[#{current_id}]"
-        end
-        new_commands <<= RPG::EventCommand.new(102, c.indent,
-                                               [new_choices, c.parameters[1]])
-        current_id = nil
-        i += 1
-      else           # Copy all other commands
-        new_commands <<= c
-      end
-      last_code = c.code
+  class << self
+    def dialogues
+      {}.replace @dialogues
     end
-    dialogues[current_id] = current_entry.rstrip if current_id
 
-    [dialogues, options, new_commands]
-  end
-
-  # Creates rvtext entries out of dialogue and option hashes.
-  # These entries can be directly written/appended to a rvtext file.
-  def self.create_rvtext(dialogues, options = nil)
-    result = []
-    dialogues.each do |id, entry|
-      header = "<<#{id}>>\n"
-      if options && options[id]
-        header += "<<face: #{options[id][:face_name]}," \
-                  " #{options[id][:face_index]}>>\n" if options[id][:face_index]
-        header += "<<background: #{options[id][:background]}>>\n" \
-          if options[id][:background]
-        header += "<<position: #{options[id][:position]}>>\n" \
-          if options[id][:position]
-        header += "<<scroll_speed: #{options[id][:scroll_speed]}>>\n" \
-          if options[id][:scroll_speed]
-        header += "<<scroll_no_fast: #{options[id][:scroll_no_fast]}>>\n" \
-          if options[id][:scroll_no_fast]
-      end
-      result <<= "#{header}#{entry}\n"
+    def dialogue_options
+      {}.replace @dialogue_options
     end
-    result
-  end
 
-  def self.export_rvtext
-    Dir.mkdir('Extracted')
-    open('DialoguesExtracted.rvtext', 'w:UTF-8') do |output|
-      map_infos = load_data('Data/MapInfos.rvdata2')
-      map_infos.each_key do |m_id|
-        map_prefix = format("M%03d#{clean_for_id(map_infos[m_id].name, 8)}/",
-                            m_id)
-        map = load_data(format('Data/Map%03d.rvdata2', m_id))
-        map.events.each_key do |e_id|
-          event = map.events[e_id]
-          event_prefix = format("%03d#{clean_for_id(event.name, 7)}/", e_id)
-          event.pages.each_index do |p_id|
+    # Directory where extracted files are being created
+    EXTRACTED_DIR = 'Extracted'
+
+    # Extracts all dialogues and choices  from all events and replaces all
+    # extracted content with the corresponding dialogue tags.
+    # The created files are stored in a subdirectory called Extracted.
+    def export_rvtext
+      Dir.mkdir(EXTRACTED_DIR)
+      Dir.mkdir("#{EXTRACTED_DIR}/Data")
+      open("#{EXTRACTED_DIR}/#{DIALOGUE_FILE_PREFIX}Extracted.#{RVTEXT_EXT}",
+           'w:UTF-8') do |output|
+        map_infos = load_data('Data/MapInfos.rvdata2')
+        map_infos.each_key do |m_id|
+          map_prefix = format("M%03d#{clean_for_id(map_infos[m_id].name, 8)}/",
+                              m_id)
+          map = load_data(format('Data/Map%03d.rvdata2', m_id))
+          map.events.each_key do |e_id|
+            event = map.events[e_id]
+            event_prefix = format("%03d#{clean_for_id(event.name, 7)}/", e_id)
+            event.pages.each_index do |p_id|
+              dialogues, _, new_list = \
+                extract_page(format("#{map_prefix + event_prefix}%02d/",
+                                    p_id + 1),
+                             event.pages[p_id].list)
+              event.pages[p_id].list = new_list
+              create_rvtext(dialogues).each { |entry| output.write(entry) }
+            end
+          end
+          save_data(map, format("#{EXTRACTED_DIR}/Data/Map%03d.rvdata2", m_id))
+        end
+
+        common_events = load_data('Data/CommonEvents.rvdata2')
+        common_events.each do |c_event|
+          next unless c_event
+          dialogues, _, new_list = \
+            extract_page(format("C%03d#{clean_for_id(c_event.name, 15)}/",
+                                c_event.id),
+                         c_event.list)
+          c_event.list = new_list
+          create_rvtext(dialogues).each { |entry| output.write(entry) }
+        end
+        save_data(common_events, "#{EXTRACTED_DIR}/Data/CommonEvents.rvdata2")
+
+        troops = load_data('Data/Troops.rvdata2')
+        troops.each do |t|
+          next unless t
+          t_prefix = format("B%03d#{clean_for_id(t.name, 15)}/", t.id)
+          t.pages.each_index do |p_id|
             dialogues, _, new_list = \
-              extract_page(format("#{map_prefix + event_prefix}%02d/",
-                                  p_id + 1),
-                           event.pages[p_id].list)
-            event.pages[p_id].list = new_list
+              extract_page(format("#{t_prefix}%02d/", p_id + 1),
+                           t.pages[p_id].list)
+            t.pages[p_id].list = new_list
             create_rvtext(dialogues).each { |entry| output.write(entry) }
           end
         end
-        save_data(map, format('Extracted/Map%03d.rvdata2', m_id))
+        save_data(troops, "#{EXTRACTED_DIR}/Data/Troops.rvdata2")
       end
-
-      common_events = load_data('Data/CommonEvents.rvdata2')
-      common_events.each do |c_event|
-        next unless c_event
-        dialogues, _, new_list = \
-          extract_page(format("C%03d#{clean_for_id(c_event.name, 15)}/",
-                              c_event.id),
-                       c_event.list)
-        c_event.list = new_list
-        create_rvtext(dialogues).each { |entry| output.write(entry) }
-      end
-      save_data(common_events, 'Extracted/CommonEvents.rvdata2')
-
-      troops = load_data('Data/Troops.rvdata2')
-      troops.each do |t|
-        next unless t
-        t_prefix = format("B%03d#{clean_for_id(t.name, 15)}/", t.id)
-        t.pages.each_index do |p_id|
-          dialogues, _, new_list = \
-            extract_page(format("#{t_prefix}%02d/", p_id + 1),
-                         t.pages[p_id].list)
-          t.pages[p_id].list = new_list
-          create_rvtext(dialogues).each { |entry| output.write(entry) }
-        end
-      end
-      save_data(troops, 'Extracted/Troops.rvdata2')
     end
-  end
 
-  #=============================================================================
-  # ** LanguageFileSystem (private methods)
-  #-----------------------------------------------------------------------------
-  # These methods are used internally and should not be used directly unless you
-  # know what you do ;)
-  #
-  # Methods: validate_dialogue_option
-  #=============================================================================
-  class << self
+    #==========================================================================
+    # ** LanguageFileSystem (private methods)
+    #--------------------------------------------------------------------------
+    # These methods are used internally and should not be used directly unless
+    # you know what you do ;)
+    #==========================================================================
+
     private
+
+    #------------------------------------------------------------------------
+    # * Getters/Setters for internal data structures
+    #------------------------------------------------------------------------
+
+    def log
+      [].replace @log
+    end
+
+    def clear_dialogues
+      @dialogues = {}
+      @dialogue_options = {}
+    end
+
+    def add_dialogue(id, text)
+      @dialogues[id] = text
+    end
+
+    def set_dialogue_options(id, options)
+      @dialogue_options[id] = options
+    end
+
+    def clear_log_context
+      @log_context = {}
+    end
+
+    def log_warning(message, data = {})
+      @log += \
+        [@log_context.merge(type: :warning).merge(data).merge(msg: message)]
+    end
+
+    def log_error(message, data = {})
+      @log += [@log_context.merge(type: :error).merge(data).merge(msg: message)]
+    end
 
     # Checks the given key and value for validity.
     # If valid then they are added to the given option hash.
@@ -388,6 +196,100 @@ module LanguageFileSystem
       end
     end
 
+    #------------------------------------------------------------------------
+    # * Methods related to the rvtext file format
+    #------------------------------------------------------------------------
+    DIALOGUE_ID = /<<([^>]+)>>/
+    DIALOGUE_OPT = /<<([^:>]+):([^>]+)>>/
+
+    # Loads the dialogues and options from the given rvtext file.
+    def load_dialogues_rvtext(filename)
+      clear_dialogues
+
+      open(filename, 'r:UTF-8') do |f|
+        @log_context[:file] = filename
+        @log_context[:line] = 0
+
+        current_id = nil
+        current_text = ''
+        current_options = {}
+
+        message_start_line = nil
+
+        f.each_line do |l|
+          @log_context[:line] += 1
+
+          next if l.start_with?('#') # Ignore comment lines
+          case l
+          when DIALOGUE_OPT
+            validate_dialogue_option(current_options, $1.strip, $2.strip)
+          when DIALOGUE_ID # start of new message
+            if current_id
+              if current_text.empty?
+                log_warning("Message with id '#{current_id}' is empty!",
+                            line: message_start_line)
+              end
+              add_dialogue(current_id, current_text.rstrip)
+              set_dialogue_options(current_id, current_options)
+            end
+            current_id = $1
+            current_text = ''
+            current_options = {}
+            message_start_line = @log_context[:line]
+          else
+            current_text += l
+          end
+        end
+
+        # Add last dialogue
+        if current_id
+          add_dialogue(current_id, current_text.rstrip)
+          set_dialogue_options(current_id, current_options)
+        end
+      end
+
+      clear_log_context
+    end
+
+    DIALOGUE_HEADER = /# LFS DIALOGUES VERSION (\d+)/
+
+    # Checks whether the given DialoguesXXX.rvtext file has the most recent
+    # version. If that's not the case then update the file.
+    def versioncheck_dialogues_rvtext(filename)
+      header = nil
+      content = nil
+      version = 10
+
+      open(filename, 'r:UTF-8') do |f|
+        header, sep, content = f.read.partition("\n")
+        if (m = DIALOGUE_HEADER.match(header))
+          version = m[1].to_i
+        else
+          # If the header does not exist, then the first line is part of then
+          # normal file content - so it needs to be added again
+          content = header + sep + content
+          header = nil
+        end
+      end
+
+      return if version == CURRENT_VERSION
+      # Backup old file
+      open(filename + '_backup', 'w:UTF-8') do |backup|
+        backup.write(header + "\n") if header
+        backup.write(content)
+      end
+      # Convert to current version
+      content = update_dialogues_rvtext(version, content)
+      open(filename, 'w:UTF-8') do |f|
+        f.write("# LFS DIALOGUES VERSION #{CURRENT_VERSION}\n")
+        f.write(content)
+      end
+      msgbox "Dialogues have been updated to current file format.\n" \
+             "The original file was renamed to '#{filename}_backup'"
+    end
+
+    # Updating content of DialoguesXXX.rvtext that has the given version to the
+    # most current version
     def update_dialogues_rvtext(version, content)
       result = String.new(content)
 
@@ -396,6 +298,128 @@ module LanguageFileSystem
       result
     end
 
+    # Creates an array of rvtext entries out of dialogue and option hashes.
+    # These entries can be directly written/appended to a rvtext file.
+    def create_rvtext(dialogues, options = nil)
+      result = []
+      dialogues.each do |id, entry|
+        header = "<<#{id}>>\n"
+        if options && options[id]
+          header += "<<face: #{options[id][:face_name]}," \
+                    " #{options[id][:face_index]}>>\n" \
+            if options[id][:face_index]
+          header += "<<background: #{options[id][:background]}>>\n" \
+            if options[id][:background]
+          header += "<<position: #{options[id][:position]}>>\n" \
+            if options[id][:position]
+          header += "<<scroll_speed: #{options[id][:scroll_speed]}>>\n" \
+            if options[id][:scroll_speed]
+          header += "<<scroll_no_fast: #{options[id][:scroll_no_fast]}>>\n" \
+            if options[id][:scroll_no_fast]
+        end
+        result <<= "#{header}#{entry}\n"
+      end
+      result
+    end
+
+    #------------------------------------------------------------------------
+    # * Extraction related methods
+    #------------------------------------------------------------------------
+
+    # Extracts an event page into dialogue and option hashes.
+    # A converted version is of the event page using \dialogue[] tags instead of
+    # the actual messages is returned as third result.
+    # with_options determines whether the messages should be replaced with the
+    # \dialogue![] tag instead of the \dialogue[] tag.
+    # All generated IDs will start with the prefix.
+    def extract_page(prefix, commands, with_options = false)
+      dialogues = {}
+      options = {}
+      new_commands = []
+
+      i = 1
+      current_id = nil
+      current_entry = ''
+      current_options = {}
+      last_code = 0
+      commands.each do |c|
+        case c.code
+        when 101, 105  # Show (Scrolling) Text
+          if current_id
+            dialogues[current_id] = current_entry.rstrip
+            i += 1
+          end
+          current_id = format("#{prefix}%03d", i)
+          current_entry = ''
+
+          current_options = {}
+          if c.code == 101
+            unless c.parameters[0] == ''
+              current_options[:face_name] = c.parameters[0]
+              current_options[:face_index] = c.parameters[1]
+            end
+            current_options[:background] = MSG_BG[c.parameters[2]] \
+              unless c.parameters[2] == 0
+            current_options[:position] = MSG_POS[c.parameters[3]] \
+              unless c.parameters[3] == 2
+          else
+            current_options[:scroll_speed] = c.parameters[0] \
+              unless c.parameters[0] == 2
+            current_options[:scroll_no_fast] = "#{c.parameters[1]}" \
+              unless c.parameters[1] == false
+          end
+          new_commands <<= c
+        when 401, 405  # Show (Scrolling) Text body
+          unless last_code == c.code
+            if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0])
+              # Ignore messages that have already been extracted
+              current_id = nil
+              new_commands <<= c
+              next
+            end
+            current_id += clean_for_id(c.parameters[0], 15) # create id
+            tag = with_options ? 'dialogue!' : 'dialogue'
+            new_commands <<= RPG::EventCommand.new(c.code, c.indent,
+                                                   ["\\#{tag}[#{current_id}]"])
+
+            options[current_id] = current_options unless current_options.empty?
+          end
+          current_entry += c.parameters[0] + "\n"
+        when 102       # Show Choices
+          if current_id
+            dialogues[current_id] = current_entry.rstrip
+            i += 1
+          end
+          current_entry = ''
+          new_choices = []
+          c.parameters[0].each_index do |k|
+            if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0][k])
+              # Ignore choices that have already been extracted
+              new_choices <<= c.parameters[0][k]
+              next
+            end
+            current_id = format("#{prefix}%03d%d", i, k)
+            current_id += clean_for_id(c.parameters[0][k], 8)
+            dialogues[current_id] = c.parameters[0][k].rstrip
+            new_choices <<= "\\dialogue[#{current_id}]"
+          end
+          new_commands <<= RPG::EventCommand.new(102, c.indent,
+                                                 [new_choices, c.parameters[1]])
+          current_id = nil
+          i += 1
+        else           # Copy all other commands
+          new_commands <<= c
+        end
+        last_code = c.code
+      end
+      dialogues[current_id] = current_entry.rstrip if current_id
+
+      [dialogues, options, new_commands]
+    end
+
+    # Method used to produce an ID out of a dialogue line.
+    # Removes special characters that might cause problems and shortens the line
+    # to the specified length.
     def clean_for_id(text, length)
       text.gsub(/[\/\\\.!$\(\)\[\]<>^\|\s]/, '')[0..length - 1]
     end

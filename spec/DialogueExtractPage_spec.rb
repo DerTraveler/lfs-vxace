@@ -71,12 +71,12 @@ describe LanguageFileSystem do
       end
 
       it 'leaves unrelated commands untouched' do
-        expect(@new_page[0]).to be EVENT_PAGE[0]
-        expect(@new_page[2]).to be EVENT_PAGE[6]
+        expect(@new_page[0]).to be PAGE[0]
+        expect(@new_page[2]).to be PAGE[6]
         [5, 6, 8, 9, 10, 12, 13, 14].each do |i|
-          expect(@new_page[i]).to be EVENT_PAGE[i + 5]
+          expect(@new_page[i]).to be PAGE[i + 5]
         end
-        expect(@new_page[16]).to be EVENT_PAGE[22]
+        expect(@new_page[16]).to be PAGE[22]
       end
     end
 
@@ -84,7 +84,7 @@ describe LanguageFileSystem do
       context 'when not extracting message options' do
         before(:all) do
           @dialogues, @options, @new_page =
-            LanguageFileSystem.extract_page('some prefix/', EVENT_PAGE)
+            LanguageFileSystem.send(:extract_page, 'some prefix/', PAGE)
         end
 
         include_examples 'page extraction', '\dialogue'
@@ -93,7 +93,8 @@ describe LanguageFileSystem do
       context 'when extracting message options' do
         before(:all) do
           @dialogues, @options, @new_page =
-            LanguageFileSystem.extract_page('some prefix/', EVENT_PAGE, true)
+            LanguageFileSystem.send(:extract_page, 'some prefix/', PAGE,
+                                    true)
         end
 
         include_examples 'page extraction', '\dialogue!'
@@ -103,7 +104,7 @@ describe LanguageFileSystem do
     context 'when extracting already partly extracted events' do
       before(:all) do
         @dialogues, @options, @new_page =
-          LanguageFileSystem.extract_page('some prefix/', EXTRACTED_PAGE)
+          LanguageFileSystem.send(:extract_page, 'some prefix/', PAGE_EXTRACTED)
       end
 
       it 'extracts the new dialogues' do
@@ -139,7 +140,7 @@ describe LanguageFileSystem do
           when 2, 13
             next
           else
-            expect(@new_page[i]).to be EXTRACTED_PAGE[i]
+            expect(@new_page[i]).to be PAGE_EXTRACTED[i]
           end
         end
       end

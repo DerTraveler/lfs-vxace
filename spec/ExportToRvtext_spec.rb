@@ -7,12 +7,12 @@ describe LanguageFileSystem do
   describe '#create_rvtext' do
     before(:all) do
       @dialogues, @options, @new_page =
-        LanguageFileSystem.extract_page('some prefix/', EVENT_PAGE)
+        LanguageFileSystem.send(:extract_page, 'some prefix/', PAGE)
     end
 
     context 'when creating without options' do
       it 'creates corresponding rvtext entries' do
-        expect(LanguageFileSystem.create_rvtext(@dialogues)).to \
+        expect(LanguageFileSystem.send(:create_rvtext, @dialogues)).to \
           contain_exactly "<<some prefix/001Witnessadramati>>\n" \
                           "Witness a dramatic meeting\n" \
                           "Of two men\n" \
@@ -38,7 +38,9 @@ describe LanguageFileSystem do
 
     context 'when creating with options' do
       it 'creates corresponding rvtext entries' do
-        expect(LanguageFileSystem.create_rvtext(@dialogues, @options)).to \
+        expect(LanguageFileSystem.send(:create_rvtext,
+                                       @dialogues,
+                                       @options)).to \
           contain_exactly "<<some prefix/001Witnessadramati>>\n" \
                           "<<scroll_speed: 4>>\n" \
                           "<<scroll_no_fast: true>>\n" \
@@ -78,10 +80,11 @@ describe LanguageFileSystem do
     end
 
     after(:all) do
-      File.delete('DialoguesExtracted.rvtext')
-      Dir.glob('Extracted/*.rvdata2').each do |f|
+      File.delete('Extracted/DialoguesExtracted.rvtext')
+      Dir.glob('Extracted/Data/*.rvdata2').each do |f|
         File.delete(f)
       end
+      Dir.delete('Extracted/Data')
       Dir.delete('Extracted')
     end
 
@@ -93,7 +96,8 @@ describe LanguageFileSystem do
 
     it 'creates an rvtext file containing all dialogues' do
       file_content = nil
-      open('DialoguesExtracted.rvtext', 'r:UTF-8') { |f| file_content = f.read }
+      open('Extracted/DialoguesExtracted.rvtext', 'r:UTF-8') \
+        { |f| file_content = f.read }
       expect(file_content).to include \
         "<<M001Mysterio/001Strange/01/001Hello,>>\n" \
         "Hello,\n" \
@@ -127,7 +131,7 @@ describe LanguageFileSystem do
     end
 
     it 'creates updated versions of the maps' do
-      map1 = load_data('Extracted/Map001.rvdata2')
+      map1 = load_data('Extracted/Data/Map001.rvdata2')
       expect(map1.events[1].pages[0].list[1].parameters[0]).to eq \
         '\dialogue[M001Mysterio/001Strange/01/001Hello,]'
       expect(map1.events[1].pages[0].list[3].parameters[0]).to eq \
@@ -151,21 +155,21 @@ describe LanguageFileSystem do
         '\dialogue[M001Mysterio/003Telepor/01/003Maybeanothertim]'
       expect(map1.events[3].pages[0].list.length).to be 17
 
-      map2 = load_data('Extracted/Map002.rvdata2')
+      map2 = load_data('Extracted/Data/Map002.rvdata2')
       expect(map2.events[1].pages[0].list[1].parameters[0]).to eq \
         '\dialogue[M002EndlessM/001Flame/01/001Whatisthis?]'
       expect(map2.events[1].pages[0].list.length).to be 12
     end
 
     it 'creates updated versions of the common events' do
-      ce = load_data('Extracted/CommonEvents.rvdata2')
+      ce = load_data('Extracted/Data/CommonEvents.rvdata2')
       expect(ce[4].list[1].parameters[0]).to eq \
         '\dialogue[C004SpecialScript/001Thiswillneverbe]'
       expect(ce[4].list.length).to be 3
     end
 
     it 'creates updated versions of the battle events' do
-      troops = load_data('Extracted/Troops.rvdata2')
+      troops = load_data('Extracted/Data/Troops.rvdata2')
       expect(troops[13].pages[0].list[1].parameters[0]).to eq \
         "\\dialogue[B013Orc*3/01/001I'mgunnaeat,huu]"
       expect(troops[13].pages[0].list.length).to be 3
