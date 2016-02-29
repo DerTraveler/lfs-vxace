@@ -4,15 +4,15 @@ require_relative 'TestData'
 
 describe LanguageFileSystem do
 
-  describe '#export_rvtext' do
+  describe '#create_rvtext' do
     before(:all) do
       @dialogues, @options, @new_page =
         LanguageFileSystem.extract_page('some prefix/', EVENT_PAGE)
     end
 
-    context 'when exporting without options' do
+    context 'when creating without options' do
       it 'creates corresponding rvtext entries' do
-        expect(LanguageFileSystem.export_rvtext(@dialogues)).to \
+        expect(LanguageFileSystem.create_rvtext(@dialogues)).to \
           contain_exactly "<<some prefix/001:Hello,>>\n" \
                           "Hello,\n" \
                           "what are you doing in this lonely place?\n",
@@ -30,9 +30,9 @@ describe LanguageFileSystem do
       end
     end
 
-    context 'when exporting with options' do
+    context 'when creating with options' do
       it 'creates corresponding rvtext entries' do
-        expect(LanguageFileSystem.export_rvtext(@dialogues, @options)).to \
+        expect(LanguageFileSystem.create_rvtext(@dialogues, @options)).to \
           contain_exactly "<<some prefix/001:Hello,>>\n" \
                           "<<face: Actor1, 0>>\n" \
                           "Hello,\n" \

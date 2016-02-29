@@ -89,30 +89,6 @@ describe LanguageFileSystem do
     end
 
     context 'when extracting already partly extracted events' do
-      EXTRACTED_PAGE = \
-        [RPG::EventCommand.new(101, 0, ['Actor1', 0, 0, 2]),
-         RPG::EventCommand.new(401, 0, ['\dialogue[some prefix/001:Hello,]']),
-         RPG::EventCommand.new(102, 0,
-                               [['\dialogue[some prefix/002-0:Getangr]',
-                                 '\dialogue[some prefix/002-1:Staysil]',
-                                 '(Glare at him)'], 2]),
-         RPG::EventCommand.new(402, 0, [0, '(Get angry)']),
-         RPG::EventCommand.new(101, 1, ['Actor4', 2, 0, 0]),
-         RPG::EventCommand.new(401, 1, ['\dialogue[some prefix/' \
-                                        "003:Idon'tknowYoutellme,]"]),
-         RPG::EventCommand.new(0, 1, []),   # Branch End
-         RPG::EventCommand.new(402, 0, [1, '(Stay silent)']),
-         RPG::EventCommand.new(101, 1, ['Actor4', 2, 1, 1]),
-         RPG::EventCommand.new(401, 1, ['\dialogue[some prefix/' \
-                                        '004:NotsurewhatIshouldsa]']),
-         RPG::EventCommand.new(0, 1, []),   # Branch End
-         RPG::EventCommand.new(402, 0, [2, '(Glare at him)']),
-         RPG::EventCommand.new(101, 1, ['Actor1', 0, 0, 2]),
-         RPG::EventCommand.new(401, 1, ['Whoa, man! Calm down!']),
-         RPG::EventCommand.new(0, 1, []),   # Branch End
-         RPG::EventCommand.new(404, 0, []), # Choice Options End
-         RPG::EventCommand.new(0, 0, [])]   # Event End
-
       before(:all) do
         @dialogues, @options, @new_page =
           LanguageFileSystem.extract_page('some prefix/', EXTRACTED_PAGE)
@@ -125,13 +101,13 @@ describe LanguageFileSystem do
                            'Whoa, man! Calm down!'])
       end
 
-      it 'extracts all of the options' do
+      it 'extracts the new options' do
         expect(@options).to \
           contain_exactly(['some prefix/002:Whoa,manCalmdown',
                            { face_name: 'Actor1', face_index: 0 }])
       end
 
-      it 'converts dialogue related commands' do
+      it 'converts the not yet extracted commands' do
         expect(@new_page[2].code).to be 102
         expect(@new_page[2].indent).to be 0
         expect(@new_page[2].parameters).to \
@@ -145,7 +121,7 @@ describe LanguageFileSystem do
         expect(@new_page.length).to be 17
       end
 
-      it 'leaves unrelated commands untouched' do
+      it 'leaves all others untouched' do
         (0..15).each do |i|
           case i
           when 2, 13

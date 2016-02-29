@@ -163,6 +163,12 @@ module LanguageFileSystem
   MSG_POS = %w(top middle bottom)
   MSG_BG = %w(normal dim transparent)
 
+  # Extracts an event page into dialogue and option hashes.
+  # A converted version is of the event page using \dialogue[] tags instead of
+  # the actual messages is returned as third result.
+  # with_options determines whether the messages should be replaced with the
+  # \dialogue![] tag instead of the \dialogue[] tag.
+  # All generated IDs will start with the prefix.
   def self.extract_page(prefix, commands, with_options = false)
     dialogues = {}
     options = {}
@@ -175,7 +181,7 @@ module LanguageFileSystem
     last_code = 0
     commands.each do |c|
       case c.code
-      when 101
+      when 101       # Show Text
         if current_id
           dialogues[current_id] = current_entry.rstrip
           i += 1
@@ -193,7 +199,7 @@ module LanguageFileSystem
         current_options[:position] = MSG_POS[c.parameters[3]] \
           unless c.parameters[3] == 2
         new_commands <<= c
-      when 401
+      when 401       # Show Text body
         unless last_code == 401
           if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0])
             # Ignore messages that have already been extracted
@@ -209,7 +215,7 @@ module LanguageFileSystem
           options[current_id] = current_options unless current_options.empty?
         end
         current_entry += c.parameters[0] + "\n"
-      when 102
+      when 102       # Show Choices
         if current_id
           dialogues[current_id] = current_entry.rstrip
           i += 1
@@ -218,6 +224,7 @@ module LanguageFileSystem
         new_choices = []
         c.parameters[0].each_index do |k|
           if LanguageFileSystem::DIALOGUE_CODE.match(c.parameters[0][k])
+            # Ignore choices that have already been extracted
             new_choices <<= c.parameters[0][k]
             next
           end
@@ -230,7 +237,7 @@ module LanguageFileSystem
                                                [new_choices, c.parameters[1]])
         current_id = nil
         i += 1
-      else
+      else           # Copy all other commands
         new_commands <<= c
       end
       last_code = c.code
@@ -240,7 +247,9 @@ module LanguageFileSystem
     [dialogues, options, new_commands]
   end
 
-  def self.export_rvtext(dialogues, options = nil)
+  # Creates rvtext entries out of dialogue and option hashes.
+  # These entries can be directly written/appended to a rvtext file.
+  def self.create_rvtext(dialogues, options = nil)
     result = []
     dialogues.each do |id, entry|
       header = "<<#{id}>>\n"
@@ -268,6 +277,9 @@ module LanguageFileSystem
   class << self
     private
 
+    # Checks the given key and value for validity.
+    # If valid then they are added to the given option hash.
+    # Otherwise an error will be added to the log.
     def validate_dialogue_option(options, key, value)
       case key.strip
       when 'face'
