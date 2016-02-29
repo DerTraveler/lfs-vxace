@@ -38,10 +38,14 @@ describe LanguageFileSystem do
   describe '#set_dialogue_options' do
     context 'when the options are valid' do
       it 'adds the options to the hash' do
-        LanguageFileSystem.set_dialogue_options('test', position: 'top')
+        LanguageFileSystem.set_dialogue_options('test', face_name: 'Actor1',
+                                                        face_index: 3,
+                                                        position: 'top',
+                                                        background: 'dim')
 
         expect(LanguageFileSystem.dialogue_options).to \
-          include('test' => { position: 'top' })
+          include('test' => { face_name: 'Actor1', face_index: 3,
+                              position: 'top', background: 'dim' })
       end
 
       it 'overwrites the existing options' do
@@ -72,14 +76,35 @@ describe LanguageFileSystem do
     context 'when encountering invalid value' do
       it 'raises an error and does not add the option' do
         # lfs_sdo = LanguageFileSystem.set_dialogue_options
+
+        # face_index out of bounds
         expect { lfs_sdo('wrong', face_index: 12) }.to \
-          raise_error(ArgumentError)
-
+          raise_error(ArgumentError, "'face_index' must be between 0 and 7")
+        # position not one of 'top', 'middle', 'bottom'
         expect { lfs_sdo('ambitious', position: -7) }.to \
-          raise_error(ArgumentError)
-
+          raise_error(ArgumentError,
+                      "'position' must be 'top', 'middle' or 'bottom'")
+        # background not one of 'normal', 'dim', 'transparent'
         expect { lfs_sdo('nice try', background: 'top') }.to \
-          raise_error(ArgumentError)
+          raise_error(ArgumentError,
+                      "'background' must be 'normal', 'dim' or 'transparent'")
+
+        expect(LanguageFileSystem.dialogue_options).to eq({})
+      end
+    end
+
+    context 'when encountering incomplete face options' do
+      it 'raises an error and does not add the option' do
+        # lfs_sdo = LanguageFileSystem.set_dialogue_options
+
+        # only face_name
+        expect { lfs_sdo('which Albert?', face_name: 'Albert') }.to \
+          raise_error(ArgumentError,
+                      "'face_name' specified without 'face_index'!")
+        # only face index
+        expect { lfs_sdo('Number 3?', face_index: 3) }.to \
+          raise_error(ArgumentError,
+                      "'face_index' specified without 'face_name'!")
 
         expect(LanguageFileSystem.dialogue_options).to eq({})
       end

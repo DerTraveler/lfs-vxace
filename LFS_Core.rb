@@ -20,6 +20,7 @@ module LanguageFileSystem
 
   @dialogues = {}
   @dialogue_options = {}
+  @error_log = []
 
   # Regexps for the special commands used in Messages
   DIALOGUE_CODE = /\\dialogue\[([^\]]+)\]/
@@ -37,6 +38,10 @@ module LanguageFileSystem
 
   def self.dialogue_options
     {}.replace @dialogue_options
+  end
+
+  def self.error_log
+    [].replace @error_log
   end
 
   def self.clear_dialogues
@@ -60,9 +65,16 @@ module LanguageFileSystem
         fail ArgumentError, "Invalid dialogue option '#{key}'"
       end
       case key
+      when :face_name
+        unless options.key?(:face_index)
+          fail ArgumentError, "'face_name' specified without 'face_index'!"
+        end
       when :face_index
         unless (0..7).cover?(value)
           fail ArgumentError, "'face_index' must be between 0 and 7"
+        end
+        unless options.key?(:face_name)
+          fail ArgumentError, "'face_index' specified without 'face_name'!"
         end
       when :position
         unless %w(top middle bottom).include?(value)
