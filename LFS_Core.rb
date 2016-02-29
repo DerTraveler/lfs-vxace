@@ -160,9 +160,13 @@ module LanguageFileSystem
     end
   end
 
+  MSG_POS = %w(top middle bottom)
+  MSG_BG = %w(normal dim transparent)
+
   def self.page_to_rvtext(prefix, commands, with_options = false)
     entries = []
     new_commands = []
+
     i = 0
     current_id = ''
     current_entry = ''
@@ -175,8 +179,15 @@ module LanguageFileSystem
         current_id = format("#{prefix}%03d", i)
         current_entry = "<<#{current_id}>>\n"
         if with_options
-          current_entry += "<<face: #{c.parameters[0]}, " \
-                           "#{c.parameters[1]}>>\n" if c.parameters[0] != ''
+          current_entry += "<<face: #{c.parameters[0]}," \
+                           " #{c.parameters[1]}>>\n" \
+                             unless c.parameters[0] == ''
+          current_entry += '<<background:' \
+                           " #{MSG_BG[c.parameters[2]]}>>\n" \
+                             unless c.parameters[2] == 0
+          current_entry += '<<position:' \
+                           " #{MSG_POS[c.parameters[3]]}>>\n" \
+                             unless c.parameters[3] == 2
         end
         new_commands <<= c
       when 401
@@ -185,6 +196,18 @@ module LanguageFileSystem
         new_commands <<= RPG::EventCommand.new(401, c.indent,
                                                ["\\#{tag}[#{current_id}]"]) \
           unless last_code == 401
+      when 102
+        entries <<= current_entry unless current_entry.empty?
+        i += 1
+        current_id = format("#{prefix}%03d", i)
+        current_entry = ''
+        new_choices = []
+        c.parameters[0].each_index do |k|
+          current_entry += "<<#{current_id}-#{k}>>\n#{c.parameters[0][k]}\n"
+          new_choices <<= "\\dialogue[#{current_id}-#{k}]"
+        end
+        new_commands <<= RPG::EventCommand.new(102, c.indent,
+                                               [new_choices, c.parameters[1]])
       else
         new_commands <<= c
       end
@@ -221,14 +244,14 @@ module LanguageFileSystem
         end
       when 'position'
         case value
-        when 'top', 'middle', 'bottom'
+        when *MSG_POS # One of the elements of MSG_POS
           options[:position] = value
         else
           log_error("'position' must be 'top', 'middle' or 'bottom'")
         end
       when 'background'
         case value
-        when 'normal', 'dim', 'transparent'
+        when *MSG_BG # One of the elements of MSG_BG
           options[:background] = value
         else
           log_error("'background' must be 'normal', 'dim' or 'transparent'")
@@ -294,9 +317,9 @@ class Game_Message
   def set_message_options(options)
     @face_name = options[:face_name] if options.key?(:face_name)
     @face_index = options[:face_index] if options.key?(:face_index)
-    @position = %w(top middle bottom).index(options[:position]) \
+    @position = LanguageFileSystem::MSG_POS.index(options[:position]) \
       if options.key?(:position)
-    @background = %w(normal dim transparent).index(options[:background]) \
+    @background = LanguageFileSystem::MSG_BG.index(options[:background]) \
       if options.key?(:background)
     @scroll_speed = options[:scroll_speed] if options.key?(:scroll_speed)
     @scroll_no_fast = options[:scroll_no_fast] == 'true' \
