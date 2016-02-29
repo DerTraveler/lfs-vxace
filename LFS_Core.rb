@@ -225,6 +225,23 @@ module LanguageFileSystem
     [dialogues, options, new_commands]
   end
 
+  def self.export_rvtext(dialogues, options = nil)
+    result = []
+    dialogues.each do |id, entry|
+      header = "<<#{id}>>\n"
+      if options && options[id]
+        header += "<<face: #{options[id][:face_name]}," \
+                  " #{options[id][:face_index]}>>\n" if options[id][:face_index]
+        header += "<<background: #{options[id][:background]}>>\n" \
+          if options[id][:background]
+        header += "<<position: #{options[id][:position]}>>\n" \
+          if options[id][:position]
+      end
+      result <<= "#{header}#{entry}\n"
+    end
+    result
+  end
+
   #=============================================================================
   # ** LanguageFileSystem (private methods)
   #-----------------------------------------------------------------------------
