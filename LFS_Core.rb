@@ -163,59 +163,66 @@ module LanguageFileSystem
   MSG_POS = %w(top middle bottom)
   MSG_BG = %w(normal dim transparent)
 
-  def self.page_to_rvtext(prefix, commands, with_options = false)
-    entries = []
+  def self.extract_page(prefix, commands, with_options = false)
+    dialogues = {}
+    options = {}
     new_commands = []
 
     i = 0
-    current_id = ''
+    current_id = nil
     current_entry = ''
+    current_options = {}
     last_code = 0
     commands.each do |c|
       case c.code
       when 101
-        entries <<= current_entry unless current_entry.empty?
+        dialogues[current_id] = current_entry.rstrip if current_id
         i += 1
-        current_id = format("#{prefix}%03d", i)
-        current_entry = "<<#{current_id}>>\n"
-        if with_options
-          current_entry += "<<face: #{c.parameters[0]}," \
-                           " #{c.parameters[1]}>>\n" \
-                             unless c.parameters[0] == ''
-          current_entry += '<<background:' \
-                           " #{MSG_BG[c.parameters[2]]}>>\n" \
-                             unless c.parameters[2] == 0
-          current_entry += '<<position:' \
-                           " #{MSG_POS[c.parameters[3]]}>>\n" \
-                             unless c.parameters[3] == 2
+        current_id = format("#{prefix}%03d:", i)
+        current_entry = ''
+
+        current_options = {}
+        unless c.parameters[0] == ''
+          current_options[:face_name] = c.parameters[0]
+          current_options[:face_index] = c.parameters[1]
         end
+        current_options[:background] = MSG_BG[c.parameters[2]] \
+          unless c.parameters[2] == 0
+        current_options[:position] = MSG_POS[c.parameters[3]] \
+          unless c.parameters[3] == 2
         new_commands <<= c
       when 401
+        unless last_code == 401
+          current_id += clean_for_id(c.parameters[0], 20)
+          tag = with_options ? 'dialogue!' : 'dialogue'
+          new_commands <<= RPG::EventCommand.new(401, c.indent,
+                                                 ["\\#{tag}[#{current_id}]"])
+
+          options[current_id] = current_options
+        end
         current_entry += c.parameters[0] + "\n"
-        tag = with_options ? 'dialogue!' : 'dialogue'
-        new_commands <<= RPG::EventCommand.new(401, c.indent,
-                                               ["\\#{tag}[#{current_id}]"]) \
-          unless last_code == 401
       when 102
-        entries <<= current_entry unless current_entry.empty?
+        dialogues[current_id] = current_entry.rstrip if current_id
         i += 1
-        current_id = format("#{prefix}%03d", i)
         current_entry = ''
         new_choices = []
         c.parameters[0].each_index do |k|
-          current_entry += "<<#{current_id}-#{k}>>\n#{c.parameters[0][k]}\n"
-          new_choices <<= "\\dialogue[#{current_id}-#{k}]"
+          current_id = format("#{prefix}%03d-%d:", i, k)
+          current_id += clean_for_id(c.parameters[0][k], 7)
+          dialogues[current_id] = c.parameters[0][k].rstrip
+          new_choices <<= "\\dialogue[#{current_id}]"
         end
         new_commands <<= RPG::EventCommand.new(102, c.indent,
                                                [new_choices, c.parameters[1]])
+        current_id = nil
       else
         new_commands <<= c
       end
       last_code = c.code
     end
-    entries <<= current_entry unless current_entry.empty?
+    dialogues[current_id] = current_entry.rstrip if current_id
 
-    [entries, new_commands]
+    [dialogues, options, new_commands]
   end
 
   #=============================================================================
@@ -281,6 +288,10 @@ module LanguageFileSystem
       result.gsub!('<<no_fast>>', '<<scroll_fast: true>>') if version < 20
 
       result
+    end
+
+    def clean_for_id(text, length)
+      text.gsub(/[\/\\\.!$\(\)\[\]<>^\|\s]/, '')[0..length - 1]
     end
   end
 end
