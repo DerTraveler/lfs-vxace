@@ -20,6 +20,8 @@ module LanguageFileSystem
 
   @dialogues = {}
   @dialogue_options = {}
+
+  @error_context = {}
   @error_log = []
 
   # Regexps for the special commands used in Messages
@@ -54,57 +56,103 @@ module LanguageFileSystem
   end
 
   def self.set_dialogue_options(id, options)
-    validate_dialogue_options(options)
-
     @dialogue_options[id] = options
   end
 
-  def self.validate_dialogue_options(options)
-    options.each do |key, value|
-      unless [:face_name, :face_index, :position, :background].include?(key)
-        fail ArgumentError, "Invalid dialogue option '#{key}'"
-      end
-      case key
-      when :face_name
-        unless options.key?(:face_index)
-          fail ArgumentError, "'face_name' specified without 'face_index'!"
-        end
-      when :face_index
-        unless (0..7).cover?(value)
-          fail ArgumentError, "'face_index' must be between 0 and 7"
-        end
-        unless options.key?(:face_name)
-          fail ArgumentError, "'face_index' specified without 'face_name'!"
-        end
-      when :position
-        unless %w(top middle bottom).include?(value)
-          fail ArgumentError, "'position' must be 'top', 'middle' or 'bottom'"
-        end
-      when :background
-        unless %w(normal dim transparent).include?(value)
-          fail ArgumentError,
-               "'background' must be 'normal', 'dim' or 'transparent'"
-        end
-      end
-    end
+  def self.clear_error_context
+    @error_context = {}
   end
 
+  def self.log_error(error_data)
+    @error_log += [error_data.merge(@error_context)]
+  end
+
+  DIALOGUE_ID = /<<([^>]+)>>/
+  DIALOGUE_OPT = /<<([^:>]+):([^>]+)>>/
+
   def self.load_rvtext(filename)
-    @dialogues = {}
+    clear_dialogues
+
     open(filename, 'r:UTF-8') do |f|
+      @error_context[:file] = filename
+      @error_context[:line] = 0
+
       current_id = nil
       current_text = ''
+      current_options = {}
+
       f.each_line do |l|
+        @error_context[:line] += 1
+
         next if l.start_with?('#') # Ignore comment lines
-        if (m = ENTRY_METADATA.match(l))
-          add_dialogue(current_id, current_text.rstrip)  if current_id
-          current_id = m[1]
+        case l
+        when DIALOGUE_OPT
+          validate_dialogue_option(current_options, $1.strip, $2.strip)
+        when DIALOGUE_ID
+          if current_id
+            add_dialogue(current_id, current_text.rstrip)
+            set_dialogue_options(current_id, current_options)
+          end
+          current_id = $1
           current_text = ''
+          current_options = {}
         else
           current_text += l
         end
       end
-      add_dialogue(current_id, current_text.rstrip) unless current_text == ''
+
+      # Add last dialogue
+      if current_id
+        add_dialogue(current_id, current_text.rstrip)
+        set_dialogue_options(current_id, current_options)
+      end
+    end
+
+    clear_error_context
+  end
+
+  #=============================================================================
+  # ** LanguageFileSystem (private methods)
+  #-----------------------------------------------------------------------------
+  # These methods are used internally and should not be used directly unless you
+  # know what you do ;)
+  #
+  # Methods: validate_dialogue_option
+  #=============================================================================
+  class << self
+    private
+
+    def validate_dialogue_option(options, key, value)
+      case key.strip
+      when 'face'
+        name, id = value.split(',')
+        case
+        when !id
+          log_error(msg: 'Index of face not specified!')
+        when !(0..7).cover?(id.to_i)
+          log_error(msg: 'Index of face must be between 0 and 7!')
+        else
+          options[:face_name] = name.strip
+          options[:face_index] = id.to_i
+        end
+      when 'position'
+        case value
+        when 'top', 'middle', 'bottom'
+          options[:position] = value
+        else
+          log_error(msg: "'position' must be 'top', 'middle' or 'bottom'")
+        end
+      when 'background'
+        case value
+        when 'normal', 'dim', 'transparent'
+          options[:background] = value
+        else
+          log_error(msg: "'background' must be 'normal', 'dim' or " \
+                         "'transparent'")
+        end
+      else
+        log_error(msg: "Invalid dialogue option '#{key}'")
+      end
     end
   end
 end

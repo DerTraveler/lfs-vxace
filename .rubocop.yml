@@ -30,3 +30,6 @@ CyclomaticComplexity:
 
 MethodLength:
   Enabled: false
+
+PerlBackrefs:
+  Enabled: false

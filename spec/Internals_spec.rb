@@ -58,57 +58,6 @@ describe LanguageFileSystem do
           include('hello there' => { position: 'bottom' })
       end
     end
-
-    def lfs_sdo(id, options)
-      LanguageFileSystem.set_dialogue_options(id, options)
-    end
-
-    context 'when encountering an unknown option' do
-      it 'raises an error and does not add the option' do
-        # lfs_sdo = LanguageFileSystem.set_dialogue_options
-        expect { lfs_sdo('risky', special_option: 'wololo') }.to \
-          raise_error(ArgumentError)
-
-        expect(LanguageFileSystem.dialogue_options).to eq({})
-      end
-    end
-
-    context 'when encountering invalid value' do
-      it 'raises an error and does not add the option' do
-        # lfs_sdo = LanguageFileSystem.set_dialogue_options
-
-        # face_index out of bounds
-        expect { lfs_sdo('wrong', face_index: 12) }.to \
-          raise_error(ArgumentError, "'face_index' must be between 0 and 7")
-        # position not one of 'top', 'middle', 'bottom'
-        expect { lfs_sdo('ambitious', position: -7) }.to \
-          raise_error(ArgumentError,
-                      "'position' must be 'top', 'middle' or 'bottom'")
-        # background not one of 'normal', 'dim', 'transparent'
-        expect { lfs_sdo('nice try', background: 'top') }.to \
-          raise_error(ArgumentError,
-                      "'background' must be 'normal', 'dim' or 'transparent'")
-
-        expect(LanguageFileSystem.dialogue_options).to eq({})
-      end
-    end
-
-    context 'when encountering incomplete face options' do
-      it 'raises an error and does not add the option' do
-        # lfs_sdo = LanguageFileSystem.set_dialogue_options
-
-        # only face_name
-        expect { lfs_sdo('which Albert?', face_name: 'Albert') }.to \
-          raise_error(ArgumentError,
-                      "'face_name' specified without 'face_index'!")
-        # only face index
-        expect { lfs_sdo('Number 3?', face_index: 3) }.to \
-          raise_error(ArgumentError,
-                      "'face_index' specified without 'face_name'!")
-
-        expect(LanguageFileSystem.dialogue_options).to eq({})
-      end
-    end
   end
 
   describe '#dialogue_options' do
