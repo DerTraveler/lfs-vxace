@@ -2,30 +2,34 @@
 
 describe LanguageFileSystem do
 
+  SIMPLE_FILE = ['<<a simple id>>',
+                 'Blablabla',
+                 '<<MultilineMessage>>',
+                 'I see...',
+                 '# This is a comment line',
+                 'So this is how you think about it.']
+
+  FILE_WITH_OPTIONS = ['<<good message>>',
+                       '<<face: Actor2, 4>>',
+                       '<<position: top>>',
+                       'Good evening sir! This is a good message!',
+                       '<<empty bad message>>',
+                       '<<face: MrX, 12>>',
+                       '<<scroll_speed: -12>>',
+                       '<<bad message>>',
+                       '<<face: blabla>>',
+                       '<<special_flag: one>>',
+                       '<<position: yellow>>',
+                       '<<scroll_no_fast: Excalibur>>',
+                       '<<background: dim>>',
+                       'Sorry for the trouble caused by me!']
+
   before(:all) do
     open('SimpleFile.rvtext', 'w:UTF-8') do |f|
-      f.write(['<<a simple id>>',
-               'Blablabla',
-               '<<MultilineMessage>>',
-               'I see...',
-               '# This is a comment line',
-               'So this is how you think about it.'].join("\n") + "\n")
+      f.write(SIMPLE_FILE.join("\n") + "\n")
     end
     open('FileWithOptions.rvtext', 'w:UTF-8') do |f|
-      f.write(['<<good message>>',
-               '<<face: Actor2, 4>>',
-               '<<position: top>>',
-               'Good evening sir! This is a good message!',
-               '<<empty bad message>>',
-               '<<face: MrX, 12>>',
-               '<<scroll_speed: -12>>',
-               '<<bad message>>',
-               '<<face: blabla>>',
-               '<<special_flag: one>>',
-               '<<position: yellow>>',
-               '<<scroll_no_fast: Excalibur>>',
-               '<<background: dim>>',
-               'Sorry for the trouble caused by me!'].join("\n") + "\n")
+      f.write(FILE_WITH_OPTIONS.join("\n") + "\n")
     end
   end
 
@@ -33,10 +37,10 @@ describe LanguageFileSystem do
     File.delete('SimpleFile.rvtext', 'FileWithOptions.rvtext')
   end
 
-  describe '#load_rvtext' do
+  describe '#load_dialogues_rvtext' do
     context 'with a simple valid file' do
       before(:all) do
-        LanguageFileSystem.load_rvtext('SimpleFile.rvtext')
+        LanguageFileSystem.load_dialogues_rvtext('SimpleFile.rvtext')
       end
 
       it 'loads the file into the dialogue hash' do
@@ -53,7 +57,7 @@ describe LanguageFileSystem do
 
     context 'with a file containing dialogue options' do
       before(:all) do
-        LanguageFileSystem.load_rvtext('FileWithOptions.rvtext')
+        LanguageFileSystem.load_dialogues_rvtext('FileWithOptions.rvtext')
       end
 
       it 'loads all dialogue texts, also empty ones' do
@@ -98,4 +102,5 @@ describe LanguageFileSystem do
     end
   end
 
+  describe '#versioncheck'
 end

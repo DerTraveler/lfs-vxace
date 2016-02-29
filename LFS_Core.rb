@@ -74,7 +74,7 @@ module LanguageFileSystem
   DIALOGUE_ID = /<<([^>]+)>>/
   DIALOGUE_OPT = /<<([^:>]+):([^>]+)>>/
 
-  def self.load_rvtext(filename)
+  def self.load_dialogues_rvtext(filename)
     clear_dialogues
 
     open(filename, 'r:UTF-8') do |f|
