@@ -21,8 +21,8 @@ module LanguageFileSystem
   @dialogues = {}
   @dialogue_options = {}
 
-  @error_context = {}
-  @error_log = []
+  @log_context = {}
+  @log = []
 
   # Regexps for the special commands used in Messages
   DIALOGUE_CODE = /\\dialogue\[([^\]]+)\]/
@@ -42,8 +42,8 @@ module LanguageFileSystem
     {}.replace @dialogue_options
   end
 
-  def self.error_log
-    [].replace @error_log
+  def self.log
+    [].replace @log
   end
 
   def self.clear_dialogues
@@ -59,12 +59,16 @@ module LanguageFileSystem
     @dialogue_options[id] = options
   end
 
-  def self.clear_error_context
-    @error_context = {}
+  def self.clear_log_context
+    @log_context = {}
   end
 
-  def self.log_error(error_data)
-    @error_log += [error_data.merge(@error_context)]
+  def self.log_warning(message, data = {})
+    @log += [@log_context.merge(type: :warning).merge(data).merge(msg: message)]
+  end
+
+  def self.log_error(message, data = {})
+    @log += [@log_context.merge(type: :error).merge(data).merge(msg: message)]
   end
 
   DIALOGUE_ID = /<<([^>]+)>>/
@@ -74,28 +78,35 @@ module LanguageFileSystem
     clear_dialogues
 
     open(filename, 'r:UTF-8') do |f|
-      @error_context[:file] = filename
-      @error_context[:line] = 0
+      @log_context[:file] = filename
+      @log_context[:line] = 0
 
       current_id = nil
       current_text = ''
       current_options = {}
 
+      message_start_line = nil
+
       f.each_line do |l|
-        @error_context[:line] += 1
+        @log_context[:line] += 1
 
         next if l.start_with?('#') # Ignore comment lines
         case l
         when DIALOGUE_OPT
           validate_dialogue_option(current_options, $1.strip, $2.strip)
-        when DIALOGUE_ID
+        when DIALOGUE_ID # start of new message
           if current_id
+            if current_text.empty?
+              log_warning("Message with id '#{current_id}' is empty!",
+                          line: message_start_line)
+            end
             add_dialogue(current_id, current_text.rstrip)
             set_dialogue_options(current_id, current_options)
           end
           current_id = $1
           current_text = ''
           current_options = {}
+          message_start_line = @log_context[:line]
         else
           current_text += l
         end
@@ -108,7 +119,7 @@ module LanguageFileSystem
       end
     end
 
-    clear_error_context
+    clear_log_context
   end
 
   #=============================================================================
@@ -128,9 +139,9 @@ module LanguageFileSystem
         name, id = value.split(',')
         case
         when !id
-          log_error(msg: 'Index of face not specified!')
+          log_error('Index of face not specified!')
         when !(0..7).cover?(id.to_i)
-          log_error(msg: 'Index of face must be between 0 and 7!')
+          log_error('Index of face must be between 0 and 7!')
         else
           options[:face_name] = name.strip
           options[:face_index] = id.to_i
@@ -140,18 +151,31 @@ module LanguageFileSystem
         when 'top', 'middle', 'bottom'
           options[:position] = value
         else
-          log_error(msg: "'position' must be 'top', 'middle' or 'bottom'")
+          log_error("'position' must be 'top', 'middle' or 'bottom'")
         end
       when 'background'
         case value
         when 'normal', 'dim', 'transparent'
           options[:background] = value
         else
-          log_error(msg: "'background' must be 'normal', 'dim' or " \
-                         "'transparent'")
+          log_error("'background' must be 'normal', 'dim' or 'transparent'")
+        end
+      when 'scroll_speed'
+        case
+        when (1..8).cover?(value.to_i)
+          options[:scroll_speed] = value.to_i
+        else
+          log_error("'scroll_speed' must be between 1 and 8!")
+        end
+      when 'scroll_no_fast'
+        case value
+        when 'true', 'false'
+          options[:scroll_no_fast] = value == 'true'
+        else
+          log_error("'scroll_no_fast' must be 'true' or 'false'")
         end
       else
-        log_error(msg: "Invalid dialogue option '#{key}'")
+        log_error("Invalid dialogue option '#{key}'")
       end
     end
   end
@@ -191,6 +215,9 @@ class Game_Message
       if options.key?(:position)
     @background = %w(normal dim transparent).index(options[:background]) \
       if options.key?(:background)
+    @scroll_speed = options[:scroll_speed] if options.key?(:scroll_speed)
+    @scroll_no_fast = options[:scroll_no_fast] == 'true' \
+      if options.key?(:scroll_no_fast)
   end
 
   alias lfs_clear clear

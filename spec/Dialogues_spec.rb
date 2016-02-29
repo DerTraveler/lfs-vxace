@@ -41,13 +41,17 @@ describe Game_Message do
                                                   face_name: 'Actor1',
                                                   face_index: 2,
                                                   position: 'top',
-                                                  background: 'transparent')
+                                                  background: 'transparent',
+                                                  scroll_speed: 5,
+                                                  scroll_no_fast: 'true')
           $game_message.add('\dialogue[hello]')
 
           expect($game_message.face_name).to eq 'Actor1'
           expect($game_message.face_index).to eq 2
           expect($game_message.position).to eq 0
           expect($game_message.background).to eq 2
+          expect($game_message.scroll_speed).to eq 5
+          expect($game_message.scroll_no_fast).to be true
         end
 
       end

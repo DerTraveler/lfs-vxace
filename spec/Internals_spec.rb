@@ -36,27 +36,28 @@ describe LanguageFileSystem do
   end
 
   describe '#set_dialogue_options' do
-    context 'when the options are valid' do
-      it 'adds the options to the hash' do
-        LanguageFileSystem.set_dialogue_options('test', face_name: 'Actor1',
-                                                        face_index: 3,
-                                                        position: 'top',
-                                                        background: 'dim')
+    it 'adds the options to the hash' do
+      LanguageFileSystem.set_dialogue_options('test', face_name: 'Actor1',
+                                                      face_index: 3,
+                                                      position: 'top',
+                                                      background: 'dim',
+                                                      scroll_speed: 5,
+                                                      scroll_no_fast: 'false')
 
-        expect(LanguageFileSystem.dialogue_options).to \
-          include('test' => { face_name: 'Actor1', face_index: 3,
-                              position: 'top', background: 'dim' })
-      end
+      expect(LanguageFileSystem.dialogue_options).to \
+        include('test' => { face_name: 'Actor1', face_index: 3,
+                            position: 'top', background: 'dim',
+                            scroll_speed: 5, scroll_no_fast: 'false' })
+    end
 
-      it 'overwrites the existing options' do
-        LanguageFileSystem.set_dialogue_options('hello there',
-                                                position: 'middle')
-        LanguageFileSystem.set_dialogue_options('hello there',
-                                                position: 'bottom')
+    it 'overwrites the existing options' do
+      LanguageFileSystem.set_dialogue_options('hello there',
+                                              position: 'middle')
+      LanguageFileSystem.set_dialogue_options('hello there',
+                                              position: 'bottom')
 
-        expect(LanguageFileSystem.dialogue_options).to \
-          include('hello there' => { position: 'bottom' })
-      end
+      expect(LanguageFileSystem.dialogue_options).to \
+        include('hello there' => { position: 'bottom' })
     end
   end
 
