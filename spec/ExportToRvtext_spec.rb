@@ -174,5 +174,15 @@ describe LanguageFileSystem do
         "\\dialogue[B013Orc*3/01/001I'mgunnaeat,huu]"
       expect(troops[13].pages[0].list.length).to be 3
     end
+
+    context "if there is already an 'Extracted' directory" do
+      it 'shows an error message' do
+        @console_output = capture_output { LanguageFileSystem.export_rvtext }
+        expect(@console_output).to \
+          eq "MSGBOX:There is already an 'Extracted' directory. Please move\n" \
+             'or delete it and try again'
+      end
+    end
+
   end
 end

@@ -52,7 +52,13 @@ module LanguageFileSystem
     # extracted content with the corresponding dialogue tags.
     # The created files are stored in a subdirectory called Extracted.
     def export_rvtext
-      Dir.mkdir(EXTRACTED_DIR)
+      begin
+        Dir.mkdir(EXTRACTED_DIR)
+      rescue SystemCallError
+        msgbox "There is already an 'Extracted' directory. Please move\n" \
+               'or delete it and try again'
+        return
+      end
       Dir.mkdir("#{EXTRACTED_DIR}/Data")
       open("#{EXTRACTED_DIR}/#{DIALOGUE_FILE_PREFIX}Extracted.#{RVTEXT_EXT}",
            'w:UTF-8') do |output|
