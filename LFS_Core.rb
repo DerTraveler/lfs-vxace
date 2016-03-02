@@ -21,6 +21,7 @@ module LanguageFileSystem
 
   @dialogues = {}
   @dialogue_options = {}
+  @database = {}
 
   @log_context = {}
   @log = []
@@ -43,6 +44,10 @@ module LanguageFileSystem
 
     def dialogue_options
       {}.replace @dialogue_options
+    end
+
+    def database
+      {}.replace @database
     end
 
     # Directory where extracted files are being created
@@ -134,6 +139,14 @@ module LanguageFileSystem
 
     def set_dialogue_options(id, options)
       @dialogue_options[id] = options
+    end
+
+    def clear_database
+      @database = new_empty_database
+    end
+
+    def new_empty_database
+      { actors: { name: {}, description: {}, note: {}, nickname: {} } }
     end
 
     def clear_log_context
@@ -588,5 +601,60 @@ class Game_Interpreter
       choices[i] = line.split("\n")[0] if line
     end
     lfs_setup_choices([choices] + params[1..-1])
+  end
+end
+
+module RPG
+  #============================================================================
+  # ** RPG::BaseItem
+  #----------------------------------------------------------------------------
+  # Reads name, description and note from language file hash instead of using
+  # the instance variable if a corresponding entry exists.
+  #
+  # Changes:
+  #   overwrite: getter for @name, @description, @note
+  #============================================================================
+  class BaseItem
+    #------------------------------------------------------------------------
+    # * Maps database object class to the corresponding key in the language
+    #   file hash to improve polymorphism of the implementation
+    #------------------------------------------------------------------------
+    SUBCLASS_KEYS = { RPG::Actor => :actors }
+
+    #------------------------------------------------------------------------
+    # * Read attribute from language file hash (Metaprogramming ninjutsu :D)
+    #------------------------------------------------------------------------
+    %w(name description note).each do |var|
+      alias_method "lfs_#{var}".to_sym, "#{var}".to_sym
+      define_method("#{var}") do
+        result = \
+          LanguageFileSystem.database[SUBCLASS_KEYS[self.class]][var.to_sym][
+            @id]
+        result || instance_variable_get("@#{var}")
+      end
+    end
+  end
+
+  #============================================================================
+  # ** RPG::Actor
+  #----------------------------------------------------------------------------
+  # Reads nickname from language file hash instead of using the instance
+  # variable if a corresponding entry exists.
+  #
+  # Changes:
+  #   overwrite: getter for @nickname
+  #============================================================================
+  class Actor < BaseItem
+    #------------------------------------------------------------------------
+    # * Read attribute from language file hash (Metaprogramming ninjutsu :D)
+    #------------------------------------------------------------------------
+    %w(nickname).each do |var|
+      alias_method "lfs_#{var}".to_sym, "#{var}".to_sym
+      define_method("#{var}") do
+        result = \
+          LanguageFileSystem.database[:actors][var.to_sym][@id]
+        result || instance_variable_get("@#{var}")
+      end
+    end
   end
 end
