@@ -261,6 +261,7 @@ module LanguageFileSystem
       clear_log_context
     end
 
+    UPDATED_DIR = 'Updated'
     DIALOGUE_HEADER = /# LFS DIALOGUES VERSION (\d+)/
 
     # Checks whether the given DialoguesXXX.rvtext file has the most recent
@@ -283,19 +284,14 @@ module LanguageFileSystem
       end
 
       return if version == CURRENT_VERSION
-      # Backup old file
-      open(filename + '_backup', 'w:UTF-8') do |backup|
-        backup.write(header + "\n") if header
-        backup.write(content)
-      end
+      Dir.mkdir(UPDATED_DIR) unless Dir.exist?(UPDATED_DIR)
+
       # Convert to current version
       content = update_dialogues_rvtext(version, content)
-      open(filename, 'w:UTF-8') do |f|
+      open("#{UPDATED_DIR}/#{filename}", 'w:UTF-8') do |f|
         f.write("# LFS DIALOGUES VERSION #{CURRENT_VERSION}\n")
         f.write(content)
       end
-      msgbox "Dialogues have been updated to current file format.\n" \
-             "The original file was renamed to '#{filename}_backup'"
     end
 
     # Updating content of DialoguesXXX.rvtext that has the given version to the

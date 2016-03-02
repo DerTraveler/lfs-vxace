@@ -6,18 +6,17 @@ describe LanguageFileSystem do
 
   describe '#versioncheck_dialogue_rvtext' do
     before(:all) do
-      @console_output = capture_output do
-        LanguageFileSystem.send(:versioncheck_dialogues_rvtext,
-                                'OldFile.rvtext')
-      end
+      @mtime = File.mtime('OldFile.rvtext')
+      LanguageFileSystem.send(:versioncheck_dialogues_rvtext, 'OldFile.rvtext')
 
-      open('OldFile.rvtext', 'r:UTF-8') do |f|
+      open('Updated/OldFile.rvtext', 'r:UTF-8') do |f|
         @updated_lines = f.readlines
       end
     end
 
     after(:all) do
-      File.delete('OldFile.rvtext_backup')
+      File.delete('Updated/OldFile.rvtext')
+      Dir.delete('Updated')
     end
 
     it 'adds the current version header' do
@@ -38,41 +37,17 @@ describe LanguageFileSystem do
       end
     end
 
-    it 'creates a backup of the old file' do
-      backup_lines = nil
-      open('OldFile.rvtext_backup', 'r:UTF-8') do |f|
-        backup_lines = f.readlines
-      end
-
-      backup_lines.each_index do |i|
-        expect(backup_lines[i]).to eq(RVTEXT_OLD[i] + "\n")
-      end
-    end
-
-    it 'shows a messagebox to notify the user' do
-      expect(@console_output).to \
-        eq "MSGBOX:Dialogues have been updated to current file format.\n" \
-           "The original file was renamed to 'OldFile.rvtext_backup'"
+    it 'leaves the old file untouched' do
+      expect(File.mtime('OldFile.rvtext')).to eq @mtime
     end
 
     it 'leaves up-to-date files as they are' do
+      updated_mtime = File.mtime('Updated/OldFile.rvtext')
       # Try to update a second time
-      console_output = capture_output do
-        LanguageFileSystem.send(:versioncheck_dialogues_rvtext,
-                                'OldFile.rvtext')
-      end
-      uptodate_lines = nil
-      open('OldFile.rvtext', 'r:UTF-8') do |f|
-        uptodate_lines = f.readlines
-      end
+      LanguageFileSystem.send(:versioncheck_dialogues_rvtext,
+                              'Updated/OldFile.rvtext')
 
-      # No changes
-      uptodate_lines.each_index do |i|
-        expect(uptodate_lines[i]).to eq @updated_lines[i]
-      end
-
-      # No message box
-      expect(console_output).to be_empty
+      expect(File.mtime('Updated/OldFile.rvtext')).to eq updated_mtime
     end
   end
 
