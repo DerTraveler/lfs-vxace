@@ -1,7 +1,9 @@
 # encoding: UTF-8
 
+require_relative 'TestPreparation'
+
 describe Game_Message do
-  before(:each) do
+  before(:all) do
     LanguageFileSystem.send(:clear_dialogues)
     LanguageFileSystem.send(:add_dialogue, 'hello', 'Some dialogue')
     LanguageFileSystem.send(:set_dialogue_options, 'hello',
@@ -12,6 +14,12 @@ describe Game_Message do
                             "This message\nhas several\nlines, yeah!")
     $game_message = Game_Message.new
   end
+
+  after(:all) do
+    LanguageFileSystem.send(:clear_dialogues)
+  end
+
+  before(:each) { $game_message.clear }
 
   shared_examples 'message display' do |tag|
     context 'and the dialogue id exists' do

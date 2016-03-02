@@ -50,3 +50,63 @@ PAGE_EXTRACTED = \
    RPG::EventCommand.new(0, 1, []),   # Branch End
    RPG::EventCommand.new(404, 0, []), # Choice Options End
    RPG::EventCommand.new(0, 0, [])]   # Event End
+
+RVTEXT_SIMPLE = ['<<a simple id>>',
+                 'Blablabla',
+                 '<<MultilineMessage>>',
+                 'I see...',
+                 '# This is a comment line',
+                 'So this is how you think about it.']
+
+RVTEXT_WITH_OPTIONS = ['<<good message>>',
+                       '<<face: Actor2, 4>>',
+                       '<<position: top>>',
+                       'Good evening sir! This is a good message!',
+                       '<<empty bad message>>',
+                       '<<face: MrX, 12>>',
+                       '<<scroll_speed: -12>>',
+                       '<<bad message>>',
+                       '<<face: blabla>>',
+                       '<<special_flag: one>>',
+                       '<<position: yellow>>',
+                       '<<scroll_no_fast: Excalibur>>',
+                       '<<background: dim>>',
+                       'Sorry for the trouble caused by me!']
+
+RVTEXT_OLD = ['<<OldScrollMessage>>',
+              '<<no_fast>>',
+              'Take it easy!',
+              '<<HelloThere>>',
+              '<<background: transparent>>',
+              'What was that???']
+
+FILES = { 'SimpleFile.rvtext' => RVTEXT_SIMPLE,
+          'FileWithOptions.rvtext' => RVTEXT_WITH_OPTIONS,
+          'OldFile.rvtext' => RVTEXT_OLD }
+
+RSpec.configure do |c|
+
+  c.before(:suite) do
+    FILES.each do |filename, content|
+      open(filename, 'w:UTF-8') do |f|
+        f.write(content.join("\n") + "\n")
+      end
+    end
+  end
+
+  c.after(:suite) do
+    File.delete(*FILES.keys)
+  end
+
+  c.expect_with :rspec do |expectations|
+    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
+  end
+
+  c.mock_with :rspec do |mocks|
+    mocks.verify_partial_doubles = true
+  end
+
+  c.order = :random
+  Kernel.srand c.seed
+
+end

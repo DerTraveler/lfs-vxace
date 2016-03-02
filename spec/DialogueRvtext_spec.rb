@@ -1,57 +1,14 @@
 # encoding: UTF-8
 
+require_relative 'TestPreparation'
 require_relative 'HelperMethods'
 
 describe LanguageFileSystem do
 
-  SIMPLE_FILE = ['<<a simple id>>',
-                 'Blablabla',
-                 '<<MultilineMessage>>',
-                 'I see...',
-                 '# This is a comment line',
-                 'So this is how you think about it.']
-
-  FILE_WITH_OPTIONS = ['<<good message>>',
-                       '<<face: Actor2, 4>>',
-                       '<<position: top>>',
-                       'Good evening sir! This is a good message!',
-                       '<<empty bad message>>',
-                       '<<face: MrX, 12>>',
-                       '<<scroll_speed: -12>>',
-                       '<<bad message>>',
-                       '<<face: blabla>>',
-                       '<<special_flag: one>>',
-                       '<<position: yellow>>',
-                       '<<scroll_no_fast: Excalibur>>',
-                       '<<background: dim>>',
-                       'Sorry for the trouble caused by me!']
-
-  OLD_FILE = ['<<OldScrollMessage>>',
-              '<<no_fast>>',
-              'Take it easy!',
-              '<<HelloThere>>',
-              '<<background: transparent>>',
-              'What was that???']
-
-  FILES = { 'SimpleFile.rvtext' => SIMPLE_FILE,
-            'FileWithOptions.rvtext' => FILE_WITH_OPTIONS,
-            'OldFile.rvtext' => OLD_FILE }
-
-  before(:all) do
-    FILES.each do |filename, content|
-      open(filename, 'w:UTF-8') do |f|
-        f.write(content.join("\n") + "\n")
-      end
-    end
-  end
-
-  after(:all) do
-    File.delete(*FILES.keys)
-  end
-
   describe '#load_dialogues_rvtext' do
     context 'with a simple valid file' do
       before(:all) do
+        LanguageFileSystem.send(:clear_log)
         LanguageFileSystem.send(:load_dialogues_rvtext, 'SimpleFile.rvtext')
       end
 
@@ -69,6 +26,7 @@ describe LanguageFileSystem do
 
     context 'with a file containing dialogue options' do
       before(:all) do
+        LanguageFileSystem.send(:clear_log)
         LanguageFileSystem.send(:load_dialogues_rvtext,
                                 'FileWithOptions.rvtext')
       end
@@ -144,7 +102,7 @@ describe LanguageFileSystem do
         when 2
           expect(@updated_lines[i]).to eq "<<scroll_fast: true>>\n"
         else
-          expect(@updated_lines[i]).to eq(OLD_FILE[i - 1] + "\n")
+          expect(@updated_lines[i]).to eq(RVTEXT_OLD[i - 1] + "\n")
         end
       end
     end
@@ -156,7 +114,7 @@ describe LanguageFileSystem do
       end
 
       backup_lines.each_index do |i|
-        expect(backup_lines[i]).to eq(OLD_FILE[i] + "\n")
+        expect(backup_lines[i]).to eq(RVTEXT_OLD[i] + "\n")
       end
     end
 

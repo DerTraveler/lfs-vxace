@@ -1,6 +1,6 @@
 # encoding: UTF-8
 
-require_relative 'TestData'
+require_relative 'TestPreparation'
 
 describe LanguageFileSystem do
 

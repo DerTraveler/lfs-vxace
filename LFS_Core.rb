@@ -123,10 +123,6 @@ module LanguageFileSystem
     # * Getters/Setters for internal data structures
     #------------------------------------------------------------------------
 
-    def log
-      [].replace @log
-    end
-
     def clear_dialogues
       @dialogues = {}
       @dialogue_options = {}
@@ -142,6 +138,14 @@ module LanguageFileSystem
 
     def clear_log_context
       @log_context = {}
+    end
+
+    def log
+      [].replace @log
+    end
+
+    def clear_log
+      @log = []
     end
 
     def log_warning(message, data = {})
