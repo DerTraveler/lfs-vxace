@@ -48,7 +48,7 @@ module LanguageFileSystem
     # Directory where extracted files are being created
     EXTRACTED_DIR = 'Extracted'
 
-    # Extracts all dialogues and choices  from all events and replaces all
+    # Extracts all dialogues and choices from all events and replaces all
     # extracted content with the corresponding dialogue tags.
     # The created files are stored in a subdirectory called Extracted.
     def export_rvtext
@@ -330,6 +330,92 @@ module LanguageFileSystem
         result <<= "#{header}#{entry}\n"
       end
       result
+    end
+
+    # Updates pages produced by the old extractions method
+    # (prior to version 2.0)
+    def update_page(commands, with_options = false)
+      new_commands = []
+
+      script_commands = nil
+      current_script = ''
+      commands.each do |c|
+        case c.code
+        when 355     # Script
+          if script_commands
+            new_commands +=
+              convert_old_scriptcall(current_script, script_commands,
+                                     with_options)
+          end
+          current_script = c.parameters[0]
+          script_commands = [c]
+        when 655     # Script body
+          current_script += c.parameters[0]
+          script_commands <<= c
+        else           # Copy all other commands
+          if script_commands
+            new_commands +=
+              convert_old_scriptcall(current_script, script_commands,
+                                     with_options)
+            script_commands = nil
+          end
+          new_commands <<= c
+        end
+      end
+      if script_commands
+        new_commands += convert_old_scriptcall(current_script, script_commands,
+                                               with_options)
+      end
+
+      # print new_commands
+      new_commands
+    end
+
+    # Script calls used by old extraction method
+    OLD_DIALOGUE_CALL = /show_dialogue\(('[^']+'|"[^"]+")\)/
+    OLD_SCROLLING_CALL = /show_scrolling\(('[^']+'|"[^"]+")\)/
+
+    # Takes a script and either converts it back into a message/scrolling text
+    # if it's a script call from the old LFS script - or leaves it as it is if
+    # it's an unrelated script call.
+    def convert_old_scriptcall(script_content, commands, with_options)
+      result = []
+      tag = '\dialogue' + (with_options ? '!' : '')
+
+      case script_content
+      when OLD_DIALOGUE_CALL
+        id = $1[1..-2]
+
+        options = @dialogue_options[id]
+        params = ['', 0, 0, 2]
+        if options
+          params[0] = options[:face_name] if options.key?(:face_name)
+          params[1] = options[:face_index] if options.key?(:face_index)
+          params[2] = \
+            LanguageFileSystem::MSG_BG.index(options[:background]) \
+              if options.key?(:background)
+          params[3] = \
+            LanguageFileSystem::MSG_POS.index(options[:position]) \
+              if options.key?(:position)
+        end
+        result << RPG::EventCommand.new(101, commands[0].indent, params)
+        result << RPG::EventCommand.new(401, commands[0].indent,
+                                        ["#{tag}[#{id}]"])
+      when OLD_SCROLLING_CALL
+        id = $1[1..-2]
+
+        options = @dialogue_options[id]
+        params = [2, false]
+        if options
+          params[0] = options[:scroll_speed] if options.key?(:scroll_speed)
+          params[1] = options[:scroll_no_fast] == 'true' \
+            if options.key?(:scroll_no_fast)
+        end
+        result << RPG::EventCommand.new(105, commands[0].indent, params)
+        result << RPG::EventCommand.new(405, commands[0].indent,
+                                        ["#{tag}[#{id}]"])
+      end
+      result.empty? ? commands : result
     end
 
     #------------------------------------------------------------------------

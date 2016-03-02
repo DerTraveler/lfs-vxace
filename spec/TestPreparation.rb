@@ -51,6 +51,27 @@ PAGE_EXTRACTED = \
    RPG::EventCommand.new(404, 0, []), # Choice Options End
    RPG::EventCommand.new(0, 0, [])]   # Event End
 
+PAGE_OLD = \
+  [RPG::EventCommand.new(101, 0, ['Actor1', 0, 0, 2]),
+   RPG::EventCommand.new(401, 0, ['\dialogue[some prefix/001:Hello,]']),
+   RPG::EventCommand.new(355, 0, ['show_dialogue("InterestingMessage")']),
+   RPG::EventCommand.new(355, 0, ['show_dialogue(']),
+   RPG::EventCommand.new(655, 0, ['"AnotherOne")']),
+   RPG::EventCommand.new(101, 0, ['Actor4', 2, 0, 0]),
+   RPG::EventCommand.new(401, 0, ['\dialogue[some prefix/' \
+                                  "003:Idon'tknowYoutellme,]"]),
+   RPG::EventCommand.new(355, 0, ["show_dialogue('AnotherOne')"]),
+   RPG::EventCommand.new(355, 0, ['# Complicated other script call']),
+   RPG::EventCommand.new(655, 0, ['EpicModule.epic_function(true)']),
+   RPG::EventCommand.new(355, 0, ['show_dialogue(']),
+   RPG::EventCommand.new(655, 0, ["'InterestingMessage')"]),
+   RPG::EventCommand.new(101, 0, ['Actor4', 2, 1, 1]),
+   RPG::EventCommand.new(401, 0, ['\dialogue[some prefix/' \
+                                  '004:NotsurewhatIshouldsa]']),
+   RPG::EventCommand.new(355, 0, ['show_scrolling("Scroller")']),
+   RPG::EventCommand.new(355, 0, ['show_scrolling(']),
+   RPG::EventCommand.new(655, 0, ["'BackgroundStory')"])]
+
 RVTEXT_SIMPLE = ['<<a simple id>>',
                  'Blablabla',
                  '<<MultilineMessage>>',
