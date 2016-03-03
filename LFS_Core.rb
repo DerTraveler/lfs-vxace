@@ -26,8 +26,10 @@ module LanguageFileSystem
   @log_context = {}
   @log = []
 
-  # Regexps for the special commands used in Messages
+  # Regexp for the special commands used in Messages
   DIALOGUE_CODE = /\\dialogue(!)?\[([^\]]+)\]/
+  # Regexp for the name commands used in Change (Nick)name command
+  NAME_CODE = /\\name\[([^\]]+)\]/
 
   # Filenames
   DIALOGUE_FILE_PREFIX = 'Dialogues'
@@ -146,7 +148,8 @@ module LanguageFileSystem
     end
 
     def new_empty_database
-      { actors: { name: {}, description: {}, note: {}, nickname: {} } }
+      { actors: { name: {}, description: {}, note: {}, nickname: {} },
+        names: {} }
     end
 
     def clear_log_context
@@ -601,6 +604,53 @@ class Game_Interpreter
       choices[i] = line.split("\n")[0] if line
     end
     lfs_setup_choices([choices] + params[1..-1])
+  end
+end
+
+#==============================================================================
+# ** Game_Actor
+#------------------------------------------------------------------------------
+# Reads the name and nickname from the database names if it is contains a
+# \name[] tag.
+#
+# Changes:
+#   alias: name, nickname
+#   overwrite: display_level_up
+#==============================================================================
+class Game_Actor
+  #--------------------------------------------------------------------------
+  # * If \name[] tag is contained read it from the database.
+  #--------------------------------------------------------------------------
+  alias lfs_name name
+  def name
+    if (m = LanguageFileSystem::NAME_CODE.match(@name))
+      result = LanguageFileSystem.database[:names][m[1]]
+      return result if result
+    end
+    actor.name
+  end
+
+  #--------------------------------------------------------------------------
+  # * If \name[] tag is contained read it from the database.
+  #--------------------------------------------------------------------------
+  alias lfs_nickname nickname
+  def nickname
+    if (m = LanguageFileSystem::NAME_CODE.match(@nickname))
+      result = LanguageFileSystem.database[:names][m[1]]
+      return result if result
+    end
+    actor.nickname
+  end
+
+  # This method is effectively the same as the original just uses the name
+  # getter instead of direct access to the @name variable
+  alias lfs_display_level_up display_level_up
+  def display_level_up(new_skills)
+    $game_message.new_page
+    $game_message.add(format(Vocab::LevelUp, name, Vocab.level, @level))
+    new_skills.each do |skill|
+      $game_message.add(format(Vocab::ObtainSkill, skill.name))
+    end
   end
 end
 

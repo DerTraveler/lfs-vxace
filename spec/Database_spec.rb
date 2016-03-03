@@ -57,8 +57,30 @@ describe 'Database objects' do
       end
 
       it 'shows the correct level up message' do
+        $game_message.clear
         actor1.display_level_up([])
         expect($game_message.all_text).to eq "Dieter is now Level 1!\n"
+      end
+
+      context 'when (nick)name is changed' do
+        before(:each) do
+          LanguageFileSystem.send(:clear_database)
+          LanguageFileSystem.database[:names]['HeroNewName'] = 'He-Man'
+          LanguageFileSystem.database[:names]['EpicTitle'] = 'Hero of Grayskull'
+          actor1.name = '\name[HeroNewName]'
+          actor1.nickname = '\name[EpicTitle]'
+        end
+
+        it 'shows the new names' do
+          expect(actor1.name).to eq 'He-Man'
+          expect(actor1.nickname).to eq 'Hero of Grayskull'
+        end
+
+        it 'shows the correct level up message' do
+          $game_message.clear
+          actor1.display_level_up([])
+          expect($game_message.all_text).to eq "He-Man is now Level 1!\n"
+        end
       end
     end
   end
