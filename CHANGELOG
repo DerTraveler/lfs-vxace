@@ -15,3 +15,4 @@
                  those specified in RPG Maker.
   - Changed the property 'no_fast' of scrolling messages to 'scroll_no_fast'
     with a value of either true or false
+  - Changed database property of classes from 'learnings' to 'learnings_note'

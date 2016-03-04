@@ -149,7 +149,42 @@ module LanguageFileSystem
 
     def new_empty_database
       { actors: { name: {}, description: {}, note: {}, nickname: {} },
+        classes: { name: {}, description: {}, note: {}, learnings_note: {} },
+        skills: { name: {}, description: {}, note: {}, message1: {},
+                  message2: {} },
+        items: { name: {}, description: {}, note: {} },
+        weapons: { name: {}, description: {}, note: {} },
+        armors: { name: {}, description: {}, note: {} },
+        enemies: { name: {}, description: {}, note: {} },
+        states: { name: {}, description: {}, note: {}, message1: {},
+                  message2: {}, message3: {}, message4: {} },
+        system: {},
+        types: { elements: {}, skill_types: {}, weapon_types: {},
+                 armor_types: {} },
+        terms: { basic: {}, params: {}, etypes: {}, commands: {} },
         names: {} }
+    end
+
+    def initialize_database
+      # Replace class learning notes
+      @database[:classes][:learnings_note].each do |c_id, learning_notes|
+        learning_notes.each do |ln_id, content|
+          $data_classes[c_id].learnings[ln_id].instance_variable_set(:@note,
+                                                                     content)
+        end
+      end
+
+      @database[:types].each do |t, elements|
+        elements.each do |e_id, term|
+          $data_system.send(t)[e_id] = term
+        end
+      end
+
+      @database[:terms].each do |t, elements|
+        elements.each do |e_id, term|
+          $data_system.terms.send(t)[e_id] = term
+        end
+      end
     end
 
     def clear_log_context
@@ -669,7 +704,10 @@ module RPG
     # * Maps database object class to the corresponding key in the language
     #   file hash to improve polymorphism of the implementation
     #------------------------------------------------------------------------
-    SUBCLASS_KEYS = { RPG::Actor => :actors }
+    SUBCLASS_KEYS = { RPG::Actor => :actors, RPG::Class => :classes,
+                      RPG::Skill => :skills, RPG::Item => :items,
+                      RPG::Weapon => :weapons, RPG::Armor => :armors,
+                      RPG::Enemy => :enemies, RPG::State => :states }
 
     #------------------------------------------------------------------------
     # * Read attribute from language file hash (Metaprogramming ninjutsu :D)
@@ -696,13 +734,81 @@ module RPG
   #============================================================================
   class Actor < BaseItem
     #------------------------------------------------------------------------
+    # * Read attribute from language file hash
+    #------------------------------------------------------------------------
+    alias lfs_nickname nickname
+    def nickname
+      LanguageFileSystem.database[:actors][:nickname][@id] || @nickname
+    end
+  end
+
+  #============================================================================
+  # ** RPG::Skill
+  #----------------------------------------------------------------------------
+  # Reads message1 and message2 from language file hash instead of using the
+  # instance variable if a corresponding entry exists.
+  #
+  # Changes:
+  #   overwrite: getter for @message1, @message2
+  #============================================================================
+  class Skill < UsableItem
+    #------------------------------------------------------------------------
     # * Read attribute from language file hash (Metaprogramming ninjutsu :D)
     #------------------------------------------------------------------------
-    %w(nickname).each do |var|
+    %w(message1 message2).each do |var|
       alias_method "lfs_#{var}".to_sym, "#{var}".to_sym
       define_method("#{var}") do
         result = \
-          LanguageFileSystem.database[:actors][var.to_sym][@id]
+          LanguageFileSystem.database[SUBCLASS_KEYS[self.class]][var.to_sym][
+            @id]
+        result || instance_variable_get("@#{var}")
+      end
+    end
+  end
+
+  #============================================================================
+  # ** RPG::State
+  #----------------------------------------------------------------------------
+  # Reads the state messages from language file hash instead of using the
+  # instance variable if a corresponding entry exists.
+  #
+  # Changes:
+  #   overwrite: getter for @message1, @message2, @message3, @message4
+  #============================================================================
+  class State < BaseItem
+    #------------------------------------------------------------------------
+    # * Read attribute from language file hash (Metaprogramming ninjutsu :D)
+    #------------------------------------------------------------------------
+    %w(message1 message2 message3 message4).each do |var|
+      alias_method "lfs_#{var}".to_sym, "#{var}".to_sym
+      define_method("#{var}") do
+        result = \
+          LanguageFileSystem.database[SUBCLASS_KEYS[self.class]][var.to_sym][
+            @id]
+        result || instance_variable_get("@#{var}")
+      end
+    end
+  end
+
+  #============================================================================
+  # ** RPG::System
+  #----------------------------------------------------------------------------
+  # Reads the game title, currency unit and all the terms from the language
+  # file hash instead of using the instance variable if a corresponding entry
+  # exists.
+  #
+  # Changes:
+  #   overwrite: getter for @game_title, @currency_unit
+  #============================================================================
+  class System
+    #------------------------------------------------------------------------
+    # * Read attribute from language file hash (Metaprogramming ninjutsu :D)
+    #------------------------------------------------------------------------
+    %w(game_title currency_unit).each do |var|
+      alias_method "lfs_#{var}".to_sym, "#{var}".to_sym
+      define_method("#{var}") do
+        result = \
+          LanguageFileSystem.database[:system][var.to_sym]
         result || instance_variable_get("@#{var}")
       end
     end
