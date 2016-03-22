@@ -1,5 +1,9 @@
 # Language File System
 
+*IMPORTANT NOTE:*<br>
+This README is still mostly the old version from LFS Version 1.3. It does not
+yet fully reflect the rewritten features.
+
 ## Contents:
 
 1. Description
@@ -7,7 +11,7 @@
   1. Dialogues.rvtext
     1. Examples
     2. How to include the text
-    3. Additional Details 
+    3. Additional Details
   2. DatabaseText.rvtext
     1. Examples
     2. Changing custom scripts
@@ -41,8 +45,8 @@ language file in your game. If you use more than one language file, the
 names will have the language name as suffix.
 
 Example:<br>
-Suppose, in the options below you have defined `:German` and `:English` as 
-languages for your game. Thus the filenames would be DialoguesGerman.rvtext 
+Suppose, in the options below you have defined `:German` and `:English` as
+languages for your game. Thus the filenames would be DialoguesGerman.rvtext
 and DialoguesEnglish.rvtxt and respectively DatabaseTextGerman.rvtext and
 DatabaseTextEnglish.rvtext.
 
@@ -83,7 +87,7 @@ ignored.
 ###### \<\<face:[Filename],[Index]\>\>
 [Filename]<br>
 The name of the Faceset file, eg. Actor1
-  
+
 [Index]<br>
 The index in the Faceset of the face that should be used.<br>
 Ranges from 0-7.
@@ -143,9 +147,9 @@ for more examples.
 You enter the following message code into a "Show Text..."-command:
 
     \dialogue[Text ID]        (NOTE: You have to enter the [] characters!)
-    
+
     or
-    
+
     \dialogue![Text ID]
 
 If the Text ID exists, the content of the message will be replaced with
@@ -153,7 +157,7 @@ your text block.
 
 When you use the normal `dialogue` tag, Option Tag information from your
 text file will be ignored and instead the settings of your event command
-will be used. If you however use the tag with the exclamation mark 
+will be used. If you however use the tag with the exclamation mark
 (`\dialogue![...]`) then the Option Tag information from the file will be
 used.
 
